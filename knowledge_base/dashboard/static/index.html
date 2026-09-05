@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Metrology KB & Rule Base Admin Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .badge-gov {
+            background-color: #065f46;
+            color: #34d399;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            gap: 1rem;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            padding: 1rem 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        main {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        th {
+            background-color: rgba(255,255,255,0.02);
+            color: var(--text-sub);
+        }
+
+        .badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-current { background-color: #065f46; color: #34d399; }
+        .badge-amendment { background-color: #1e40af; color: #93c5fd; }
+        .badge-draft { background-color: #92400e; color: #fcd34d; }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input, select, textarea, button {
+            background-color: #0f172a;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        button.btn-primary {
+            background-color: var(--accent);
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button.btn-primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .result-box {
+            white-space: pre-wrap;
+            background-color: #090d16;
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🏛️ Legal Metrology Knowledge Base Admin Dashboard</h1>
+        <span class="badge-gov">OFFICIAL SOURCES: GOI & MAHARASHTRA</span>
+    </header>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('sandbox')">RAG Query Sandbox</button>
+        <button class="tab-btn" onclick="switchTab('documents')">Documents</button>
+        <button class="tab-btn" onclick="switchTab('rules')">Rule Base</button>
+        <button class="tab-btn" onclick="switchTab('amendments')">Amendments & Versioning</button>
+        <button class="tab-btn" onclick="switchTab('exemptions')">Exemptions</button>
+        <button class="tab-btn" onclick="switchTab('penalties')">Penalties & Compounding</button>
+        <button class="tab-btn" onclick="switchTab('coverage')">Coverage Matrix</button>
+        <button class="tab-btn" onclick="switchTab('audit')">Audit Logs</button>
+    </div>
+
+    <main>
+        <!-- RAG QUERY SANDBOX -->
+        <div id="sandbox" class="tab-content active">
+            <div class="card">
+                <h2>RAG Legal Query & Citation Resolver</h2>
+                <div class="search-box">
+                    <input type="text" id="queryInput" placeholder="Ask a Legal Metrology question (e.g. What declarations are mandatory on a packaged cosmetic sold in Maharashtra?)" style="flex: 1;">
+                    <select id="jurisdictionSelect">
+                        <option value="MAHARASHTRA">MAHARASHTRA</option>
+                        <option value="CENTRAL">CENTRAL (GOI)</option>
+                    </select>
+                    <input type="date" id="dateInput">
+                    <button class="btn-primary" onclick="runRagQuery()">Execute RAG Search</button>
+                </div>
+                <div id="ragOutput" class="result-box">Execute a query above to see 10-step cited statutory analysis...</div>
+            </div>
+        </div>
+
+        <!-- DOCUMENTS TAB -->
+        <div id="documents" class="tab-content">
+            <div class="card">
+                <h2>Ingested Verified Government Documents</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Document Title</th>
+                            <th>Type</th>
+                            <th>Jurisdiction</th>
+                            <th>Authority</th>
+                            <th>Status</th>
+                            <th>SHA-256 Hash</th>
+                            <th>Source URL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docsTableBody">
+                        <tr><td colspan="7">Loading documents...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RULES TAB -->
+        <div id="rules" class="tab-content">
+            <div class="card">
+                <h2>Structured Machine-Readable Rule Base</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rule ID</th>
+                            <th>Jurisdiction</th>
+                            <th>Rule / Section</th>
+                            <th>Mandatory Requirements</th>
+                            <th>Exemptions</th>
+                            <th>Penalties</th>
+                            <th>Legal Source Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rulesTableBody">
+                        <tr><td colspan="7">Loading rules...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AMENDMENTS TAB -->
+        <div id="amendments" class="tab-content">
+            <div class="card">
+                <h2>Statutory Amendments & Point-in-Time Version History</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Amendment ID</th>
+                            <th>Parent Document</th>
+                            <th>Change Type</th>
+                            <th>Affected Rule</th>
+                            <th>Effective Date</th>
+                            <th>Notification Number</th>
+                            <th>Source</th>
+                        </tr>
+                    </thead>
+                    <tbody id="amendmentsTableBody">
+                        <tr><td colspan="7">Loading amendments...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- EXEMPTIONS TAB -->
+        <div id="exemptions" class="tab-content">
+            <div class="card">
+                <h2>Statutory Exemption Engine Registry</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Exemption ID</th>
+                            <th>Product Category</th>
+                            <th>Condition</th>
+                            <th>Exemption Description</th>
+                            <th>Legal Source</th>
+                        </tr>
+                    </thead>
+                    <tbody id="exemptionsTableBody">
+                        <tr><td colspan="5">Loading exemptions...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PENALTIES TAB -->
+        <div id="penalties" class="tab-content">
+            <div class="card">
+                <h2>Statutory Penalties & Compounding Matrix</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Penalty ID</th>
+                            <th>Offence Description</th>
+                            <th>Section / Rule</th>
+                            <th>First Offence</th>
+                            <th>Repeat Offence</th>
+                            <th>Compounding Authority</th>
+                        </tr>
+                    </thead>
+                    <tbody id="penaltiesTableBody">
+                        <tr><td colspan="6">Loading penalties...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- COVERAGE MATRIX -->
+        <div id="coverage" class="tab-content">
+            <div class="card">
+                <h2>Legal Completeness Coverage Matrix</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Required Statutory Document</th>
+                            <th>Discovered</th>
+                            <th>Official Domain Verified</th>
+                            <th>Current Version</th>
+                            <th>Amendments Traced</th>
+                            <th>Indexed & RAG Ready</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Legal Metrology Act, 2009</td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td></tr>
+                        <tr><td>Legal Metrology (Packaged Commodities) Rules, 2011</td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td></tr>
+                        <tr><td>Legal Metrology (General) Rules, 2011</td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td></tr>
+                        <tr><td>Maharashtra Legal Metrology Enforcement Rules, 2011</td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td></tr>
+                        <tr><td>Central PCR Amendments (2017, 2021, 2022)</td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td></tr>
+                        <tr><td>Maharashtra Amendments (2018, 2021)</td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td></tr>
+                        <tr><td>Official Inspection & Seizure Procedures</td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td></tr>
+                        <tr><td>Official FAQs & Consumer Guidance</td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td><td><span class="badge badge-current">YES</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AUDIT LOGS -->
+        <div id="audit" class="tab-content">
+            <div class="card">
+                <h2>RAG Query System Audit Trail</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Timestamp</th>
+                            <th>Jurisdiction</th>
+                            <th>Query Text</th>
+                            <th>Rules Evaluated</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                        <tr><td colspan="6">Loading audit logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            if (tabId === 'documents') fetchDocuments();
+            if (tabId === 'rules') fetchRules();
+            if (tabId === 'amendments') fetchAmendments();
+            if (tabId === 'exemptions') fetchExemptions();
+            if (tabId === 'penalties') fetchPenalties();
+            if (tabId === 'audit') fetchAuditLogs();
+        }
+
+        async function runRagQuery() {
+            const query = document.getElementById('queryInput').value;
+            const jurisdiction = document.getElementById('jurisdictionSelect').value;
+            const date = document.getElementById('dateInput').value || null;
+
+            if (!query) {
+                alert('Please enter a legal query.');
+                return;
+            }
+
+            document.getElementById('ragOutput').innerText = 'Executing hybrid RAG search across official government corpus...';
+
+            try {
+                const res = await fetch('/api/rag/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, jurisdiction, date })
+                });
+                const data = await res.json();
+                document.getElementById('ragOutput').innerText = data.answer;
+            } catch (err) {
+                document.getElementById('ragOutput').innerText = 'Error executing RAG query: ' + err;
+            }
+        }
+
+        async function fetchDocuments() {
+            const res = await fetch('/api/documents');
+            const data = await res.json();
+            const tbody = document.getElementById('docsTableBody');
+            tbody.innerHTML = data.map(d => `
+                <tr>
+                    <td><strong>${d.title}</strong></td>
+                    <td>${d.document_type}</td>
+                    <td>${d.jurisdiction}</td>
+                    <td>${d.authority}</td>
+                    <td><span class="badge badge-current">${d.status}</span></td>
+                    <td><code>${d.sha256.substring(0, 12)}...</code></td>
+                    <td><a href="${d.source_url}" target="_blank" style="color: #60a5fa;">Link</a></td>
+                </tr>
+            `).join('');
+        }
+
+        async function fetchRules() {
+            const res = await fetch('/api/rules');
+            const data = await res.json();
+            const tbody = document.getElementById('rulesTableBody');
+            tbody.innerHTML = data.map(r => `
+                <tr>
+                    <td><code>${r.rule_id}</code></td>
+                    <td>${r.jurisdiction}</td>
+                    <td>Rule ${r.rule || r.section || ''}</td>
+                    <td>${(r.requirements || []).join('<br>')}</td>
+                    <td>${(r.exemptions || []).join('<br>')}</td>
+                    <td>${(r.penalty || []).join('<br>')}</td>
+                    <td>${r.source_reference}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function fetchAmendments() {
+            const res = await fetch('/api/amendments');
+            const data = await res.json();
+            const tbody = document.getElementById('amendmentsTableBody');
+            tbody.innerHTML = data.map(a => `
+                <tr>
+                    <td><code>${a.amendment_id}</code></td>
+                    <td>${a.parent_document}</td>
+                    <td><span class="badge badge-amendment">${a.change_type}</span></td>
+                    <td>Rule ${a.affected_rule || 'N/A'}</td>
+                    <td>${a.effective_date || 'N/A'}</td>
+                    <td>${a.notification_number || 'N/A'}</td>
+                    <td><a href="${a.source_url}" target="_blank" style="color: #60a5fa;">Official Link</a></td>
+                </tr>
+            `).join('');
+        }
+
+        async function fetchExemptions() {
+            const res = await fetch('/api/exemptions');
+            const data = await res.json();
+            const tbody = document.getElementById('exemptionsTableBody');
+            tbody.innerHTML = data.map(e => `
+                <tr>
+                    <td><code>${e.exemption_id}</code></td>
+                    <td><span class="badge badge-current">${e.category}</span></td>
+                    <td>${e.condition}</td>
+                    <td>${e.description}</td>
+                    <td>${e.legal_source}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function fetchPenalties() {
+            const res = await fetch('/api/penalties');
+            const data = await res.json();
+            const tbody = document.getElementById('penaltiesTableBody');
+            tbody.innerHTML = data.map(p => `
+                <tr>
+                    <td><code>${p.penalty_id}</code></td>
+                    <td>${p.offence}</td>
+                    <td>${p.section || p.rule}</td>
+                    <td>${p.first_offence}</td>
+                    <td>${p.repeat_offence || 'N/A'}</td>
+                    <td>${p.compounding_authority}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function fetchAuditLogs() {
+            const res = await fetch('/api/audit_logs');
+            const data = await res.json();
+            const tbody = document.getElementById('auditTableBody');
+            tbody.innerHTML = data.map(l => `
+                <tr>
+                    <td><code>${l.log_id}</code></td>
+                    <td>${new Date(l.timestamp).toLocaleString()}</td>
+                    <td>${l.jurisdiction}</td>
+                    <td>${l.query_text}</td>
+                    <td>${(l.rules_evaluated || []).join(', ')}</td>
+                    <td><span class="badge badge-current">${l.confidence}</span></td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

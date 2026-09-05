@@ -1,0 +1,22 @@
+DOCUMENT: Legal Metrology Act, 2009 (Act No. 1 of 2010)
+AUTHORITY: Central Government
+JURISDICTION: CENTRAL
+NOTIFICATION NUMBER: Act 1 of 2010
+EFFECTIVE DATE: 2011-03-01
+OFFICIAL URL: https://www.indiacode.nic.in/bitstream/123456789/2040/1/201001.pdf
+
+SECTION 1: Short title, extent and commencement.
+(1) This Act/Rule may be called Legal Metrology Act, 2009 (Act No. 1 of 2010).
+(2) It extends to the whole of INDIA.
+
+RULE 6: Declarations to be made on every package.
+(1) Every package shall bear thereon or on label securely affixed thereto detailed declarations including:
+(a) Name and address of manufacturer, packer, or importer.
+(b) Common or generic name of commodity.
+(c) Net quantity in terms of standard weight or measure.
+(d) Month and year of packing or import.
+(e) Maximum Retail Price (MRP) inclusive of all taxes.
+(f) Consumer helpline details.
+
+RULE 14: Periodical verification and stamping of weights and measures.
+(1) Every person using weight or measure in commercial transaction shall present it for verification and stamping to the Legal Metrology Officer.

@@ -1,0 +1,50 @@
+[
+  {
+    "provision_id": "PROV_SEC_18",
+    "document_id": "LM-SRC-001",
+    "section": "Section 18",
+    "rule": "Rule 6",
+    "sub_rule": "6(1)",
+    "page": 12,
+    "topic": "Declarations on Pre-packaged Commodities",
+    "text": "No person shall manufacture, pack, sell, import, distribute, deliver, offer, expose or possess for sale any pre-packaged commodity unless such package is in such standard quantity or number and bears thereon such declarations and marks in such manner as may be prescribed.",
+    "source_type": "official",
+    "version": "1.0.0"
+  },
+  {
+    "provision_id": "PROV_SEC_24",
+    "document_id": "LM-SRC-001",
+    "section": "Section 24",
+    "rule": "Maharashtra Enforcement Rules 2011 Rule 14",
+    "sub_rule": null,
+    "page": 16,
+    "topic": "Penalty for Use of Unverified Weight or Measure",
+    "text": "Whoever uses any weight or measure or weighing or measuring instrument which has not been verified or re-verified and stamped under this Act in any transaction, deal or contract, shall be punished with fine which shall not be less than two thousand rupees, but which may extend to ten thousand rupees and, for the second or subsequent offence, with imprisonment for a term which may extend to one year and with fine.",
+    "source_type": "official",
+    "version": "1.0.0"
+  },
+  {
+    "provision_id": "PROV_SEC_36_1",
+    "document_id": "LM-SRC-001",
+    "section": "Section 36(1)",
+    "rule": "PCR 2011 Rule 6",
+    "sub_rule": "6(1)",
+    "page": 22,
+    "topic": "Penalty for Non-Standard Pre-packaged Commodities",
+    "text": "Whoever manufactures, packs, imports, sells, distributes, delivers or causes to be manufactured, packed, imported, sold, distributed or delivered any pre-packaged commodity which does not conform to the declarations on the package shall be punished with fine which may extend to twenty-five thousand rupees, for the second offence, with fine which may extend to fifty thousand rupees and, for the subsequent offence, with fine which shall not be less than fifty thousand rupees but which may extend to one lakh rupees or with imprisonment for a term which may extend to one year or with both.",
+    "source_type": "official",
+    "version": "1.0.0"
+  },
+  {
+    "provision_id": "PROV_SEC_48",
+    "document_id": "LM-SRC-001",
+    "section": "Section 48",
+    "rule": "Maharashtra Enforcement Rules 2011 Rule 15",
+    "sub_rule": "48(1)-(2)",
+    "page": 28,
+    "topic": "Compounding of Offences",
+    "text": "Any offence punishable under section 24, section 25, section 27, section 28, section 29, section 31, section 33, section 34, section 35, section 36, section 37, section 38, section 39, section 41, section 42 or any rule made sub-section (3) of section 52, may, either before or after the institution of the prosecution, be compounded by the Director or Legal Metrology Officer. Provided that nothing in this sub-section shall apply to a person who commits the same or similar offence within a period of three years from the date on which the first offence committed by him was compounded.",
+    "source_type": "official",
+    "version": "1.0.0"
+  }
+]
