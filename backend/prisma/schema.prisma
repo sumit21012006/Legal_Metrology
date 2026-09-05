@@ -1,0 +1,211 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CITIZEN
+  BUSINESS
+  INSPECTOR
+  CONTROLLER
+}
+
+enum NoticeType {
+  IMPROVEMENT
+  SEIZURE
+  PANCHANAMA
+  COMPOUNDED
+}
+
+enum NoticeStatus {
+  ISSUED
+  ACKNOWLEDGED
+  DISPUTED
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum CaseStatus {
+  RECEIVED
+  ASSIGNED
+  INSPECTED
+  NOTICE_ISSUED
+  COMPOUNDED
+  PROSECUTION
+  RESOLVED
+}
+
+model User {
+  id          String   @id @default(uuid())
+  keycloakId  String?  @unique
+  name        String
+  email       String   @unique
+  phone       String?
+  role        Role     @default(CITIZEN)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  businesses  Business[]
+  complaints  Complaint[]
+  inspections Inspection[]
+  auditLogs   AuditLog[]
+}
+
+model Business {
+  id             String   @id @default(uuid())
+  ownerUserId    String
+  owner          User     @relation(fields: [ownerUserId], references: [id])
+  name           String
+  address        String
+  geoLat         Float?
+  geoLng         Float?
+  gstin          String   @unique
+  turnoverBand   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  inspections    Inspection[]
+  notices        Notice[]
+  selfChecks     SelfCheckReport[]
+  disputes       Dispute[]
+  payments       Payment[]
+  offenceRecords OffenceRecord[]
+}
+
+model Complaint {
+  id                   String     @id @default(uuid())
+  citizenId            String
+  citizen              User       @relation(fields: [citizenId], references: [id])
+  businessId           String?
+  retailerNameText     String
+  retailerAddressText  String
+  category             String
+  description          String
+  photoUrls            String[]
+  invoiceUrl           String?
+  status               CaseStatus @default(RECEIVED)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  inspections          Inspection[]
+}
+
+model Inspection {
+  id           String     @id @default(uuid())
+  inspectorId  String
+  inspector    User       @relation(fields: [inspectorId], references: [id])
+  businessId   String
+  business     Business   @relation(fields: [businessId], references: [id])
+  complaintId  String?
+  complaint    Complaint? @relation(fields: [complaintId], references: [id])
+  visitDate    DateTime   @default(now())
+  status       CaseStatus @default(ASSIGNED)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  ocrResults   OcrResult[]
+  notices      Notice[]
+}
+
+model OcrResult {
+  id              String     @id @default(uuid())
+  inspectionId    String
+  inspection      Inspection @relation(fields: [inspectionId], references: [id])
+  imageUrls       String[]
+  extractedFields Json
+  violations      Json
+  offenceTier     String
+  createdAt       DateTime   @default(now())
+}
+
+model SelfCheckReport {
+  id              String   @id @default(uuid())
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id])
+  imageUrls       String[]
+  extractedFields Json
+  violations      Json
+  createdAt       DateTime @default(now())
+}
+
+model Notice {
+  id            String       @id @default(uuid())
+  caseId        String
+  inspectionId  String
+  inspection    Inspection   @relation(fields: [inspectionId], references: [id])
+  businessId    String
+  business      Business     @relation(fields: [businessId], references: [id])
+  type          NoticeType
+  contentText   String
+  sectionRefs   String[]
+  status        NoticeStatus @default(ISSUED)
+  issuedDate    DateTime     @default(now())
+  deadlineDate  DateTime
+  pdfUrl        String?
+  signatureUrl  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  disputes      Dispute[]
+  payments      Payment[]
+}
+
+model OffenceRecord {
+  id                     String   @id @default(uuid())
+  productNameNormalized  String
+  manufacturerNormalized String
+  businessId             String
+  business               Business @relation(fields: [businessId], references: [id])
+  noticeId               String?
+  offenceNumber          Int      @default(1)
+  offenceDate            DateTime @default(now())
+}
+
+model Dispute {
+  id         String   @id @default(uuid())
+  noticeId   String
+  notice     Notice   @relation(fields: [noticeId], references: [id])
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  comment    String
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+}
+
+model Payment {
+  id              String   @id @default(uuid())
+  noticeId        String
+  notice          Notice   @relation(fields: [noticeId], references: [id])
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id])
+  amount          Float
+  razorpayOrderId String   @unique
+  status          String   @default("INITIATED")
+  createdAt       DateTime @default(now())
+}
+
+model SupplyChainLink {
+  id               String   @id @default(uuid())
+  sourceBusinessId String
+  namedBusinessId  String
+  inspectionId     String
+  status           String   @default("LINKED")
+  createdAt        DateTime @default(now())
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  actorId       String?
+  actor         User?    @relation(fields: [actorId], references: [id])
+  action        String
+  previousState String?
+  newState      String?
+  ipAddress     String?
+  hash          String
+  createdAt     DateTime @default(now())
+}
