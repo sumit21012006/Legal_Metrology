@@ -47,7 +47,6 @@ class InspectionFlowScreen extends ConsumerStatefulWidget {
 class _InspectionFlowScreenState extends ConsumerState<InspectionFlowScreen> {
   late final PageController _pageController;
   int _currentStep = 0;
-  bool _advancedFromEvidence = false;
 
   // Shared flow data.
   List<EvidenceItem> _evidence = [];
@@ -158,11 +157,10 @@ class _InspectionFlowScreenState extends ConsumerState<InspectionFlowScreen> {
                 children: [
                   EvidenceStep(
                     evidence: _evidence,
-                    onEvidenceChanged: (list) => setState(() {
-                      _evidence = list;
-                      _advancedFromEvidence = list.any((e) => e.uploaded);
-                    }),
-                    onContinue: _evidence.any((e) => e.uploaded) ? _next : null,
+                    onEvidenceChanged: (list) => setState(() => _evidence = list),
+                    // Upload happens as stage 1 of the OCR pipeline on the
+                    // next step — here we only require captured photos.
+                    onContinue: _evidence.isNotEmpty ? _next : null,
                   ),
                   OcrStep(
                     evidence: _evidence,
@@ -184,6 +182,8 @@ class _InspectionFlowScreenState extends ConsumerState<InspectionFlowScreen> {
                     evidence: _evidence,
                     onAnyConfirmed: () =>
                         setState(() => _hasConfirmedViolations = true),
+                    onViolationsChanged: (list) =>
+                        setState(() => _violations = list),
                     onContinue: _next,
                     onBack: _back,
                   ),

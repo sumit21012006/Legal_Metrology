@@ -10,7 +10,6 @@ import '../../../core/widgets/feature_widgets.dart';
 import '../../../di/providers.dart';
 import '../../../models/inspection.dart';
 import '../../../models/notice.dart';
-import '../../../repositories/seizure_repository.dart';
 import '../../../core/auth/auth_controller.dart';
 
 /// INSPECTOR DASHBOARD — assigned inspections, pending count, active cases,

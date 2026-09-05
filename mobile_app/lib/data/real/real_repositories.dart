@@ -749,7 +749,16 @@ class RealSeizureRepository implements SeizureRepository {
   Future<List<SeizureSample>> getSamples(String inspectionId) async {
     try {
       final res = await _client.dio.get('/inspections/$inspectionId/seizures');
-      return const [];
+      return _list(_map(res.data)['samples'])
+          .map((s) => SeizureSample(
+                id: s['id'] as String? ?? '',
+                productId: s['productId'] as String? ?? '',
+                productName: s['productName'] as String? ?? '',
+                quantity: s['quantity'] as String? ?? '',
+                reason: s['reason'] as String? ?? '',
+                capturedAt: DateTime.tryParse(s['capturedAt'] as String? ?? '') ?? DateTime.now(),
+              ))
+          .toList();
     } catch (e) {
       throw mapException(e);
     }
@@ -914,7 +923,7 @@ class RealBusinessCaseRepository implements BusinessCaseRepository {
   Future<List<LegalCase>> listCases() async {
     try {
       final res = await _client.dio.get('/business/cases');
-      return const [];
+      return _list(res.data).map((c) => LegalCase.fromJson(_map(c))).toList();
     } catch (e) {
       throw mapException(e);
     }

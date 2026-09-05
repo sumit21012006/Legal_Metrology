@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common_widgets.dart';
 import '../../../data/mock_data.dart';
-import '../../../models/notice.dart';
 import '../../../models/violation.dart';
 
 /// Bottom sheet for manually adding a violation (inspector-authored).
@@ -52,7 +51,7 @@ class _AddViolationSheetState extends State<AddViolationSheet> {
             ),
             const SizedBox(height: AppSpacing.xl),
             DropdownButtonFormField<ViolationType>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(labelText: 'Violation type'),
               items: ViolationType.values
                   .map((t) => DropdownMenuItem(value: t, child: Text(t.defaultLabel)))

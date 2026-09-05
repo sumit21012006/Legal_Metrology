@@ -23,6 +23,7 @@ class ViolationsStep extends ConsumerStatefulWidget {
     required this.ocrResult,
     required this.evidence,
     required this.onAnyConfirmed,
+    this.onViolationsChanged,
     required this.onContinue,
     required this.onBack,
   });
@@ -31,6 +32,7 @@ class ViolationsStep extends ConsumerStatefulWidget {
   final OcrResult? ocrResult;
   final List<EvidenceItem> evidence;
   final VoidCallback onAnyConfirmed;
+  final ValueChanged<List<Violation>>? onViolationsChanged;
   final VoidCallback onContinue;
   final VoidCallback onBack;
 
@@ -63,6 +65,7 @@ class _ViolationsStepState extends ConsumerState<ViolationsStep> {
         _violations = list;
         _loading = false;
       });
+      widget.onViolationsChanged?.call(list);
     } on AppException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -149,6 +152,7 @@ class _ViolationsStepState extends ConsumerState<ViolationsStep> {
         _violations = [...(_violations ?? []), created];
       });
       widget.onAnyConfirmed();
+      widget.onViolationsChanged?.call(_violations!);
     } on AppException catch (e) {
       _showError(e.friendlyMessage);
     }
@@ -160,6 +164,7 @@ class _ViolationsStepState extends ConsumerState<ViolationsStep> {
           .map((v) => v.id == updated.id ? updated : v)
           .toList();
     });
+    widget.onViolationsChanged?.call(_violations!);
   }
 
   void _showError(String message) {

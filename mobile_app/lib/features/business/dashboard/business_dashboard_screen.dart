@@ -9,7 +9,6 @@ import '../../../core/widgets/feature_widgets.dart';
 import '../../../core/auth/auth_controller.dart';
 import '../../../di/providers.dart';
 import '../../../models/notice.dart';
-import '../../../models/payment.dart';
 
 /// BUSINESS DASHBOARD — prevention-first view: scan packaging before
 /// selling, with case, notice and payment summaries.

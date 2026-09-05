@@ -396,6 +396,35 @@ class LegalCase {
   final String? requiredAction;
   final NoticeType? noticeType;
   final double? penaltyAmount;
+
+  factory LegalCase.fromJson(Map<String, dynamic> json) => LegalCase(
+        id: json['id'] as String? ?? '',
+        productName: json['productName'] as String? ?? '',
+        status: CaseStatus.values.firstWhere(
+          (s) => s.name == (json['status'] as String?),
+          orElse: () => CaseStatus.underReview,
+        ),
+        openedAt: DateTime.tryParse(json['openedAt'] as String? ?? '') ?? DateTime.now(),
+        timeline: (json['timeline'] as List<dynamic>?)
+                ?.whereType<Map<String, dynamic>>()
+                .map((t) => CaseTimelineEntry(
+                      title: t['title'] as String? ?? '',
+                      dateTime: DateTime.tryParse(t['dateTime'] as String? ?? '') ?? DateTime.now(),
+                      isDone: t['isDone'] as bool? ?? false,
+                      isCurrent: t['isCurrent'] as bool? ?? false,
+                      details: t['details'] as String?,
+                      actor: t['actor'] as String?,
+                    ))
+                .toList() ??
+            const [],
+        violationSummary: json['violationSummary'] as String? ?? '',
+        role: json['role'] == 'INSPECTOR' ? UserRole.inspector : UserRole.business,
+        counterpartyName: json['counterpartyName'] as String? ?? '',
+        currentStage: json['currentStage'] as String?,
+        deadline: DateTime.tryParse(json['deadline'] as String? ?? ''),
+        requiredAction: json['requiredAction'] as String?,
+        penaltyAmount: (json['penaltyAmount'] as num?)?.toDouble(),
+      );
 }
 
 /// One timeline step rendered in the visual case timeline.

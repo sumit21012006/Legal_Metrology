@@ -160,10 +160,27 @@ class _EvidenceStepState extends ConsumerState<EvidenceStep> {
         BottomActionBar(
           children: [
             Expanded(
-              child: PrimaryButton(
-                label: 'Upload & Analyse',
-                icon: Icons.cloud_upload_outlined,
-                onPressed: widget.evidence.isEmpty ? null : widget.onContinue,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PrimaryButton(
+                    label: 'Upload & Analyse',
+                    icon: Icons.cloud_upload_outlined,
+                    onPressed: widget.evidence.isEmpty ? null : widget.onContinue,
+                  ),
+                  if (widget.evidence.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Capture at least one package photo to continue',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],

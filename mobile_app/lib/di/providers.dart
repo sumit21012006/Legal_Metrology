@@ -4,7 +4,6 @@ import '../core/auth/auth_controller.dart';
 import '../core/network/api_client.dart';
 import '../data/mock_backend.dart';
 import '../data/mock/mock_repositories.dart';
-import '../data/mock/mock_repositories.dart';
 import '../data/real/real_repositories.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/business_repository.dart';
@@ -105,7 +104,7 @@ final caseRepositoryProvider = Provider<CaseRepository>((ref) {
   if (useMockData) {
     return MockCaseRepository(
       ref.watch(mockBackendProvider),
-      ref.watch(authControllerProvider.notifier).state.user?.role,
+      ref.watch(authControllerProvider).user?.role,
     );
   }
   return RealCaseRepository(ref.watch(apiClientProvider));

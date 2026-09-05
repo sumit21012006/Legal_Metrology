@@ -110,8 +110,16 @@ class ApiClient {
     final refreshToken = await _tokenStorage.readRefreshToken();
     if (refreshToken == null || refreshToken.isEmpty) return false;
     try {
-      final response = await dio.post(
-        '/auth/refresh', // provisional path — final NestJS route TBD
+      final refreshDio = Dio(
+        BaseOptions(
+          baseUrl: AppConstants.apiBaseUrl,
+          connectTimeout: AppConstants.connectTimeout,
+          receiveTimeout: AppConstants.receiveTimeout,
+          contentType: 'application/json',
+        ),
+      );
+      final response = await refreshDio.post(
+        '/auth/refresh',
         data: {'refreshToken': refreshToken},
       );
       final data = response.data;
@@ -123,7 +131,7 @@ class ApiClient {
         return true;
       }
       return false;
-    } on DioException {
+    } catch (_) {
       await _tokenStorage.clear();
       throw const UnauthorizedException();
     }

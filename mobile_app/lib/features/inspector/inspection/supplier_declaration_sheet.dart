@@ -129,7 +129,7 @@ class _SupplierDeclarationSheetState
             ),
             const SizedBox(height: AppSpacing.lg),
             DropdownButtonFormField<String>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(labelText: 'Supplier type'),
               items: _types
                   .map((t) => DropdownMenuItem(value: t, child: Text(t)))
