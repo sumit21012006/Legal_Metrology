@@ -125,8 +125,12 @@ def divider():
     return HRFlowable(width="100%", thickness=0.6, color=colors.HexColor("#D9D9D9"), spaceBefore=10, spaceAfter=12)
 
 
+import os
+
+output_pdf_path = os.path.join(os.path.dirname(__file__), "detailed-task-distribution.pdf")
+
 doc = SimpleDocTemplate(
-    "/home/claude/detailed-task-distribution.pdf",
+    output_pdf_path,
     pagesize=A4,
     topMargin=15 * mm, bottomMargin=15 * mm,
     leftMargin=20 * mm, rightMargin=20 * mm,
