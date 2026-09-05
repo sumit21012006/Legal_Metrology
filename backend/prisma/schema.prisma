@@ -178,15 +178,21 @@ model Dispute {
 }
 
 model Payment {
-  id              String   @id @default(uuid())
-  noticeId        String
-  notice          Notice   @relation(fields: [noticeId], references: [id])
-  businessId      String
-  business        Business @relation(fields: [businessId], references: [id])
-  amount          Float
-  razorpayOrderId String   @unique
-  status          String   @default("INITIATED")
-  createdAt       DateTime @default(now())
+  id                String    @id @default(uuid())
+  noticeId          String
+  notice            Notice    @relation(fields: [noticeId], references: [id])
+  caseId            String?
+  businessId        String
+  business          Business  @relation(fields: [businessId], references: [id])
+  amount            Float
+  currency          String    @default("INR")
+  razorpayOrderId   String    @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  razorpayEventId   String?   @unique
+  status            String    @default("INITIATED")
+  createdAt         DateTime  @default(now())
+  paidAt            DateTime?
 }
 
 model SupplyChainLink {
