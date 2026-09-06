@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module';
 import { PrismaModule } from './database/prisma.module';
+import { ElasticsearchModule } from './search/elasticsearch.module';
 import { AuthController } from './modules/auth/auth.controller';
 import { BusinessesController } from './modules/businesses/businesses.controller';
 import { InspectionsController } from './modules/inspections/inspections.controller';
@@ -28,6 +29,7 @@ import { EventsGateway } from './gateways/events.gateway';
     ConfigModule.forRoot({ isGlobal: true }),
     KnowledgeBaseModule,
     PrismaModule,
+    ElasticsearchModule,
   ],
   controllers: [
     AuthController,

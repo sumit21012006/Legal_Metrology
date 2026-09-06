@@ -1,11 +1,21 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import { ElasticsearchService, RuleSearchQuery } from '../../search/elasticsearch.service';
 
 @ApiTags('Legal Knowledge Base')
 @Controller('api/v1/knowledge-base')
 export class KnowledgeBaseController {
-  constructor(private readonly kbService: KnowledgeBaseService) {}
+  constructor(
+    private readonly kbService: KnowledgeBaseService,
+    private readonly searchService: ElasticsearchService,
+  ) {}
+
+  @Post('search')
+  @ApiOperation({ summary: 'Sub-millisecond full-text vector search across legal rules & sections' })
+  searchRules(@Body() query: RuleSearchQuery) {
+    return this.searchService.searchRules(query);
+  }
 
   @Get('rulebook')
   @ApiOperation({ summary: 'Get full legal rulebook (Rules 1-34 & Schedules)' })
