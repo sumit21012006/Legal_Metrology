@@ -5,17 +5,18 @@
 /// - Endpoints are NOT hard-coded here; repositories define capability
 ///   interfaces and `RealXxxRepository` implementations map them to the
 ///   final NestJS routes once Member 1 finalises the API contract.
+import 'package:flutter/foundation.dart';
+
 class AppConstants {
   AppConstants._();
 
   /// NestJS backend base URL (Member 1).
-  ///
-  /// Override per-environment with:
-  ///   flutter run --dart-define=API_BASE_URL=https://api.example.com
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3000/api/v1',
-  );
+  static String get apiBaseUrl {
+    const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (override.isNotEmpty) return override;
+    if (kIsWeb) return 'http://localhost:3000/api/v1';
+    return 'http://10.0.2.2:3000/api/v1';
+  }
 
   /// FastAPI AI service (Member 4) is reached THROUGH NestJS, never directly.
   /// This constant exists only for documentation purposes.

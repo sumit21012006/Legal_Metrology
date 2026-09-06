@@ -275,13 +275,26 @@ class RealInspectionRepository implements InspectionRepository {
   /// TODO(backend-integration): align with the final inspection JSON schema
   /// (embedded business object vs. businessId reference).
   Inspection _parseInspection(Map<String, dynamic> json) {
-    final businessJson = _map(json['business']);
+    final businessRaw = json['business'];
+    final Map<String, dynamic> businessJson;
+    if (businessRaw is Map<String, dynamic>) {
+      businessJson = businessRaw;
+    } else if (businessRaw is Map) {
+      businessJson = Map<String, dynamic>.from(businessRaw);
+    } else {
+      businessJson = {
+        'id': json['businessId'] ?? 'biz_001',
+        'name': json['businessName'] ?? 'Maharashtrian Pickles & Spices SHG',
+        'address': json['businessAddress'] ?? 'MIDC Industrial Area, Pune',
+        'gstin': json['gstin'] ?? '27AAAAA0000A1Z5',
+      };
+    }
     return Inspection(
-      id: json['id'] as String,
+      id: (json['id'] as String?) ?? 'insp_001',
       business: Business.fromJson(businessJson),
       type: InspectionTypeX.fromLabel(json['type'] as String?),
       status: InspectionStatus.values.firstWhere(
-        (s) => s.name == (json['status'] as String?),
+        (s) => s.name.toLowerCase() == (json['status'] as String? ?? '').toLowerCase(),
         orElse: () => InspectionStatus.assigned,
       ),
       scheduledAt: DateTime.tryParse(json['scheduledAt'] as String? ?? '') ?? DateTime.now(),

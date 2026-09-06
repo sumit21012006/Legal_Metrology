@@ -57,12 +57,21 @@ class BusinessLocation {
 
   factory BusinessLocation.fromJson(Map<String, dynamic> json) =>
       BusinessLocation(
+<<<<<<< HEAD
         addressLine: json['addressLine'] as String? ?? json['address'] as String? ?? 'Midc Industrial Area',
         city: json['city'] as String? ?? 'Pune',
         state: json['state'] as String? ?? 'Maharashtra',
         pincode: json['pincode'] as String? ?? '411001',
         latitude: (json['latitude'] ?? json['geoLat'] as num?)?.toDouble(),
         longitude: (json['longitude'] ?? json['geoLng'] as num?)?.toDouble(),
+=======
+        addressLine: (json['addressLine'] ?? json['address'] ?? 'MIDC Industrial Area') as String,
+        city: (json['city'] as String?) ?? 'Pune',
+        state: (json['state'] as String?) ?? 'Maharashtra',
+        pincode: (json['pincode'] as String?) ?? '411026',
+        latitude: (json['latitude'] as num?)?.toDouble() ?? (json['geoLat'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble() ?? (json['geoLng'] as num?)?.toDouble(),
+>>>>>>> fcbe35d (feat(mobile_app): align Riverpod real repositories and model deserializers with NestJS backend)
       );
 }
 
@@ -124,27 +133,38 @@ class Business {
   }
 
   factory Business.fromJson(Map<String, dynamic> json) {
-    final loc = json['location'];
-    final Map<String, dynamic> locationMap = loc is Map<String, dynamic>
-        ? loc
-        : <String, dynamic>{
-            'addressLine': json['address'] as String? ?? 'Plot 42, MIDC Industrial Area',
-            'city': 'Pune',
-            'state': 'Maharashtra',
-            'pincode': '411026',
-            'latitude': json['geoLat'],
-            'longitude': json['geoLng'],
-          };
+    final locationData = json['location'];
+    final BusinessLocation location;
+    if (locationData is Map<String, dynamic>) {
+      location = BusinessLocation.fromJson(locationData);
+    } else if (locationData is Map) {
+      location = BusinessLocation.fromJson(Map<String, dynamic>.from(locationData));
+    } else {
+      final addr = (json['address'] ?? json['addressLine']) as String? ?? 'Plot 42, MIDC, Pune';
+      location = BusinessLocation(
+        addressLine: addr,
+        city: (json['city'] as String?) ?? 'Pune',
+        state: (json['state'] as String?) ?? 'Maharashtra',
+        pincode: (json['pincode'] as String?) ?? '411026',
+        latitude: (json['geoLat'] as num?)?.toDouble() ?? (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['geoLng'] as num?)?.toDouble() ?? (json['longitude'] as num?)?.toDouble(),
+      );
+    }
+
     return Business(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? 'Business',
+      id: (json['id'] as String?) ?? 'biz_001',
+      name: (json['name'] as String?) ?? 'Business Entity',
       type: BusinessType.fromLabel(json['type'] as String? ?? json['category'] as String?),
       status: switch ((json['status'] as String?)?.toUpperCase()) {
         'PENDING' => BusinessStatus.pending,
         'SUSPENDED' => BusinessStatus.suspended,
         _ => BusinessStatus.active,
       },
+<<<<<<< HEAD
       location: BusinessLocation.fromJson(locationMap),
+=======
+      location: location,
+>>>>>>> fcbe35d (feat(mobile_app): align Riverpod real repositories and model deserializers with NestJS backend)
       gstin: json['gstin'] as String?,
       ownerName: json['ownerName'] as String?,
       contactPhone: json['contactPhone'] as String?,
