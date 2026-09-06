@@ -53,25 +53,16 @@ class BusinessLocation {
   final double? latitude;
   final double? longitude;
 
-  String get singleLine => '$addressLine, $city, $state — $pincode';
+  String get singleLine => '$addressLine, $city, $state - $pincode';
 
   factory BusinessLocation.fromJson(Map<String, dynamic> json) =>
       BusinessLocation(
-<<<<<<< HEAD
-        addressLine: json['addressLine'] as String? ?? json['address'] as String? ?? 'Midc Industrial Area',
-        city: json['city'] as String? ?? 'Pune',
-        state: json['state'] as String? ?? 'Maharashtra',
-        pincode: json['pincode'] as String? ?? '411001',
-        latitude: (json['latitude'] ?? json['geoLat'] as num?)?.toDouble(),
-        longitude: (json['longitude'] ?? json['geoLng'] as num?)?.toDouble(),
-=======
         addressLine: (json['addressLine'] ?? json['address'] ?? 'MIDC Industrial Area') as String,
         city: (json['city'] as String?) ?? 'Pune',
         state: (json['state'] as String?) ?? 'Maharashtra',
         pincode: (json['pincode'] as String?) ?? '411026',
         latitude: (json['latitude'] as num?)?.toDouble() ?? (json['geoLat'] as num?)?.toDouble(),
         longitude: (json['longitude'] as num?)?.toDouble() ?? (json['geoLng'] as num?)?.toDouble(),
->>>>>>> fcbe35d (feat(mobile_app): align Riverpod real repositories and model deserializers with NestJS backend)
       );
 }
 
@@ -160,11 +151,7 @@ class Business {
         'SUSPENDED' => BusinessStatus.suspended,
         _ => BusinessStatus.active,
       },
-<<<<<<< HEAD
-      location: BusinessLocation.fromJson(locationMap),
-=======
       location: location,
->>>>>>> fcbe35d (feat(mobile_app): align Riverpod real repositories and model deserializers with NestJS backend)
       gstin: json['gstin'] as String?,
       ownerName: json['ownerName'] as String?,
       contactPhone: json['contactPhone'] as String?,

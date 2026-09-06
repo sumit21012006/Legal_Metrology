@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common_widgets.dart';
-import '../../../di/providers.dart';
 import '../../../models/evidence.dart';
 import '../../../models/ocr_result.dart';
+import '../../../../services/ocr_service.dart';
 
 /// STEP 2 — evidence upload + OCR pipeline progress.
 ///
@@ -52,18 +52,22 @@ class _OcrStepState extends ConsumerState<OcrStep> {
       _result = null;
     });
     try {
-      final result = await ref.read(ocrRepositoryProvider).analyzePackage(
-            ownerId: widget.inspectionId,
-            images: widget.evidence,
-            onStep: (step) {
-              if (!mounted) return;
-              final index = OcrPipelineStep.values.indexOf(step);
-              setState(() {
-                _completedSteps = index;
-                _current = step;
-              });
-            },
-          );
+      final ocrService = OcrService();
+      final steps = OcrPipelineStep.values;
+
+      for (int i = 0; i < steps.length; i++) {
+        if (!mounted) return;
+        setState(() {
+          _completedSteps = i;
+          _current = steps[i];
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+      }
+
+      final imagePaths = widget.evidence.map((e) => e.filePath).toList();
+      final result = await ocrService.analyzePackageImages(imagePaths);
+      ocrService.dispose();
+
       if (!mounted) return;
       setState(() {
         _result = result;
@@ -77,12 +81,12 @@ class _OcrStepState extends ConsumerState<OcrStep> {
         _failed = true;
         _failureMessage = e.friendlyMessage;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _failed = true;
         _failureMessage =
-            'Image analysis failed. Please retry — unclear photos can also '
+            'Image analysis failed ($e). Please retry — clear photos can also '
             'be retaken from the previous step.';
       });
     }

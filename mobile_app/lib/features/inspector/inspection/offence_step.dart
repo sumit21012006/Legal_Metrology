@@ -45,6 +45,14 @@ class _OffenceStepState extends ConsumerState<OffenceStep> {
     _lookup();
   }
 
+  @override
+  void didUpdateWidget(covariant OffenceStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ocrResult != widget.ocrResult && widget.ocrResult != null) {
+      _lookup();
+    }
+  }
+
   Future<void> _lookup() async {
     setState(() {
       _loading = true;
@@ -71,6 +79,12 @@ class _OffenceStepState extends ConsumerState<OffenceStep> {
         _error = e.friendlyMessage;
         _loading = false;
       });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to check offence history: $e';
+        _loading = false;
+      });
     }
   }
 
@@ -86,10 +100,12 @@ class _OffenceStepState extends ConsumerState<OffenceStep> {
                       'Checking previous offence history for this product…')
               : _error != null
                   ? ErrorView(message: _error!, onRetry: _lookup)
-                  : ListView(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      children: [
-                        _history!.hasPreviousOffence
+                  : _history == null
+                      ? const ErrorView(message: 'Offence history could not be loaded.')
+                      : ListView(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          children: [
+                            _history!.hasPreviousOffence
                             ? Container(
                                 padding: const EdgeInsets.all(AppSpacing.lg),
                                 decoration: BoxDecoration(

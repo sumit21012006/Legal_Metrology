@@ -40,6 +40,14 @@ dependencies:
   # Signature capture
   signature: ^5.5.0
 
+  # On-device Text Recognition (OCR)
+  google_mlkit_text_recognition: ^0.17.1
+
+  # Official PDF Generation & Previewing
+  pdf: ^3.13.0
+  printing: ^5.15.0
+  path_provider: ^2.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

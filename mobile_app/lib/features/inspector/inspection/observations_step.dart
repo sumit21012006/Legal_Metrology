@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common_widgets.dart';
-import '../../../models/inspection.dart';
 import 'supplier_declaration_sheet.dart';
 import 'seizure_step.dart';
 
-/// STEP 6 — structured observation recording, editable before finalisation.
+/// STEP 6 — Streamlined Observations: Supplier Declaration & Seizure Recording.
+///
+/// Removes redundant manual observation text fields and highlights the two critical
+/// statutory actions required during physical inspection:
+/// 1. Declare Supplier / Upstream Source (multi-tier supply chain traceability)
+/// 2. Record Seizure / Sample Collection (panchanama witnesses and evidence)
 class ObservationsStep extends StatefulWidget {
   const ObservationsStep({
     super.key,
@@ -24,29 +28,8 @@ class ObservationsStep extends StatefulWidget {
 }
 
 class _ObservationsStepState extends State<ObservationsStep> {
-  final _product = TextEditingController();
-  final _batch = TextEditingController();
-  final _declaredQty = TextEditingController();
-  final _observedQty = TextEditingController();
-  final _declaredMrp = TextEditingController();
-  final _observedMrp = TextEditingController();
-  final _manufacturer = TextEditingController();
-  final _supplier = TextEditingController();
-  final _remarks = TextEditingController();
-
-  @override
-  void dispose() {
-    _product.dispose();
-    _batch.dispose();
-    _declaredQty.dispose();
-    _observedQty.dispose();
-    _declaredMrp.dispose();
-    _observedMrp.dispose();
-    _manufacturer.dispose();
-    _supplier.dispose();
-    _remarks.dispose();
-    super.dispose();
-  }
+  bool _supplierDeclared = false;
+  bool _sampleSeized = false;
 
   @override
   Widget build(BuildContext context) {
@@ -57,68 +40,64 @@ class _ObservationsStepState extends State<ObservationsStep> {
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               const SectionHeader(
-                title: 'Inspection observations',
-                subtitle: 'Editable summary recorded with the inspection record',
+                title: 'Inspection Actions & Observations',
+                subtitle:
+                    'Record statutory upstream supply chain links and formal seizure/sample documentation',
               ),
-              _ObservationField(
-                  controller: _product, label: 'Product'),
-              _ObservationField(
-                  controller: _batch, label: 'Batch / Lot No.'),
-              _ObservationField(
-                  controller: _declaredQty,
-                  label: 'Declared quantity',
-                  keyboard: TextInputType.text),
-              _ObservationField(
-                  controller: _observedQty,
-                  label: 'Observed quantity',
-                  keyboard: TextInputType.text),
-              _ObservationField(
-                  controller: _declaredMrp, label: 'Declared MRP'),
-              _ObservationField(
-                  controller: _observedMrp, label: 'Observed MRP'),
-              _ObservationField(
-                  controller: _manufacturer,
-                  label: 'Manufacturer / Packer / Importer'),
-              _ObservationField(
-                  controller: _supplier,
-                  label: 'Supplier / Source'),
-              _ObservationField(
-                controller: _remarks,
-                label: 'Remarks',
-                maxLines: 3,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              SecondaryButton(
-                label: 'Declare Supplier / Source',
+              const SizedBox(height: AppSpacing.sm),
+
+              // Card 1: Declare Supplier / Source
+              _ActionCard(
+                title: 'Declare Supplier / Source',
+                subtitle:
+                    'Link this retailer to distributor or manufacturer (auto-creates upstream inspection for Controller)',
                 icon: Icons.link_outlined,
-                onPressed: () =>
-                    SupplierDeclarationSheet.show(context, widget.inspectionId),
+                actionLabel: _supplierDeclared ? 'Update Supplier Link' : 'Declare Supplier / Source',
+                statusLabel: _supplierDeclared ? 'Declared & Linked' : 'Optional / Recommended',
+                isCompleted: _supplierDeclared,
+                onPressed: () async {
+                  await SupplierDeclarationSheet.show(context, widget.inspectionId);
+                  setState(() => _supplierDeclared = true);
+                },
               ),
-              const SizedBox(height: AppSpacing.md),
-              SecondaryButton(
-                label: 'Record Seizure / Sample',
-                icon: Icons.inventory_2_outlined,
-                onPressed: () => SeizureSheet.show(context, widget.inspectionId),
-              ),
+
               const SizedBox(height: AppSpacing.lg),
+
+              // Card 2: Record Seizure / Sample
+              _ActionCard(
+                title: 'Record Seizure / Sample',
+                subtitle:
+                    'Record seized sample units, seizure reason, panchanama witnesses, and official sample ID',
+                icon: Icons.inventory_2_outlined,
+                actionLabel: _sampleSeized ? 'Update Seizure Record' : 'Record Seizure / Sample',
+                statusLabel: _sampleSeized ? 'Samples Recorded' : 'If Samples Seized On-site',
+                isCompleted: _sampleSeized,
+                onPressed: () async {
+                  await SeizureSheet.show(context, widget.inspectionId);
+                  setState(() => _sampleSeized = true);
+                },
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.outline),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.inventory_2_outlined,
-                        size: 18, color: AppColors.textSecondary),
+                    Icon(Icons.info_outline, size: 20, color: AppColors.primary),
                     SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
-                        'Observations are attached to the inspection record '
-                        'and referenced in any issued notice.',
+                        'Captured packaging photos, OCR declarations, and verified violations are automatically attached to the statutory notice in the next step.',
                         style: TextStyle(
                           fontSize: 12.5,
                           color: AppColors.textSecondary,
+                          height: 1.4,
                         ),
                       ),
                     ),
@@ -132,7 +111,7 @@ class _ObservationsStepState extends State<ObservationsStep> {
           children: [
             Expanded(
               child: PrimaryButton(
-                label: 'Continue',
+                label: 'Continue to Notice Generation',
                 icon: Icons.arrow_forward,
                 onPressed: widget.onContinue,
               ),
@@ -144,31 +123,116 @@ class _ObservationsStepState extends State<ObservationsStep> {
   }
 }
 
-class _ObservationField extends StatelessWidget {
-  const _ObservationField({
-    required this.controller,
-    required this.label,
-    this.keyboard,
-    this.maxLines = 1,
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.actionLabel,
+    required this.statusLabel,
+    required this.isCompleted,
+    required this.onPressed,
   });
 
-  final TextEditingController controller;
-  final String label;
-  final TextInputType? keyboard;
-  final int maxLines;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String actionLabel;
+  final String statusLabel;
+  final bool isCompleted;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboard,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          isDense: true,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isCompleted ? AppColors.success.withValues(alpha: 0.5) : AppColors.outline,
+          width: isCompleted ? 1.5 : 1.0,
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isCompleted
+                      ? AppColors.successContainer
+                      : AppColors.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: isCompleted ? AppColors.success : AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isCompleted ? AppColors.success : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isCompleted)
+                const Icon(Icons.check_circle, color: AppColors.success, size: 22),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: isCompleted
+                ? OutlinedButton.icon(
+                    onPressed: onPressed,
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Text(actionLabel),
+                  )
+                : ElevatedButton.icon(
+                    onPressed: onPressed,
+                    icon: Icon(icon, size: 18),
+                    label: Text(actionLabel),
+                  ),
+          ),
+        ],
       ),
     );
   }

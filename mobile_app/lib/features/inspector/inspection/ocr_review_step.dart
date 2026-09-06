@@ -37,6 +37,14 @@ class _OcrReviewStepState extends State<OcrReviewStep> {
     _initControllers();
   }
 
+  @override
+  void didUpdateWidget(covariant OcrReviewStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ocrResult != widget.ocrResult) {
+      _initControllers();
+    }
+  }
+
   void _initControllers() {
     final fields = widget.ocrResult?.fields ?? const <ExtractedField>[];
     _controllers = {
@@ -111,10 +119,12 @@ class _OcrReviewStepState extends State<OcrReviewStep> {
                 ),
               const SizedBox(height: AppSpacing.xl),
 
-              // Fields
               ...fields.map((field) => _FieldEditor(
                     field: field,
-                    controller: _controllers[field.key]!,
+                    controller: _controllers.putIfAbsent(
+                      field.key,
+                      () => TextEditingController(text: field.isMissing ? '' : field.value),
+                    ),
                     isCorrected: _corrected.contains(field.key),
                     onCorrected: () =>
                         setState(() => _corrected.add(field.key)),

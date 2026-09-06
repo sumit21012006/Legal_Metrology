@@ -147,6 +147,30 @@ class OcrResult {
   bool get isCompleted => status == OcrStatus.completed;
   bool get isFailed => status == OcrStatus.failed;
 
+  String? getFieldValue(String key) {
+    try {
+      final match = fields.firstWhere(
+        (f) =>
+            (f.key.toUpperCase() == key.toUpperCase() ||
+                f.label.toUpperCase() == key.toUpperCase()) &&
+            f.value.trim().isNotEmpty,
+      );
+      return match.value.trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? get productName => getFieldValue(OcrFieldKeys.productName);
+  String? get genericName => getFieldValue(OcrFieldKeys.genericName);
+  String? get manufacturerDetails => getFieldValue(OcrFieldKeys.manufacturer);
+  String? get batchNumber => getFieldValue(OcrFieldKeys.batchOrLot);
+  String? get mrp => getFieldValue(OcrFieldKeys.mrp);
+  String? get netQuantity => getFieldValue(OcrFieldKeys.netQuantity);
+  String? get manufacturingDate => getFieldValue(OcrFieldKeys.manufacturingDate);
+  String? get expiryDate => getFieldValue(OcrFieldKeys.expiryOrUseBy);
+  String? get consumerCare => getFieldValue(OcrFieldKeys.consumerCare);
+
   OcrResult copyWith({
     String? jobId,
     OcrStatus? status,

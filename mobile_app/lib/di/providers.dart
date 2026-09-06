@@ -15,7 +15,6 @@ import '../repositories/offence_repository.dart';
 import '../repositories/ocr_repository.dart';
 import '../repositories/seizure_repository.dart';
 import '../repositories/violation_repository.dart';
-import '../models/user.dart' show UserRole;
 import '../services/signature_service.dart';
 
 /// ============================================================================

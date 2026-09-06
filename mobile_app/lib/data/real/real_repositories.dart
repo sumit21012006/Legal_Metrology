@@ -589,6 +589,13 @@ class RealNoticeRepository implements NoticeRepository {
         'type': request.noticeType.name,
         'violations': request.confirmedViolations.map((v) => v.id).toList(),
         if (request.remarks != null) 'remarks': request.remarks,
+        if (request.productName != null) 'productName': request.productName,
+        if (request.businessName != null) 'businessName': request.businessName,
+        if (request.businessAddress != null) 'businessAddress': request.businessAddress,
+        if (request.manufacturerName != null) 'manufacturerName': request.manufacturerName,
+        if (request.batchNumber != null) 'batchNumber': request.batchNumber,
+        if (request.mrp != null) 'mrp': request.mrp,
+        if (request.netQuantity != null) 'netQuantity': request.netQuantity,
       });
       return _parse(_map(res.data));
     } catch (e) {
@@ -711,6 +718,11 @@ class RealNoticeRepository implements NoticeRepository {
         penaltyAmount: (json['penaltyAmount'] as num?)?.toDouble(),
         bodyText: json['bodyText'] as String?,
         inspectorRemark: json['inspectorRemark'] as String?,
+        batchNumber: json['batchNumber'] as String?,
+        netQuantity: json['netQuantity'] as String?,
+        mrp: json['mrp'] as String?,
+        manufacturerName: json['manufacturerName'] as String?,
+        businessAddress: json['businessAddress'] as String?,
       );
 }
 

@@ -5,6 +5,7 @@ import { PrismaModule } from './database/prisma.module';
 import { ElasticsearchModule } from './search/elasticsearch.module';
 import { AuthController } from './modules/auth/auth.controller';
 import { BusinessesController } from './modules/businesses/businesses.controller';
+import { SelfCheckController } from './modules/businesses/self-check.controller';
 import { InspectionsController } from './modules/inspections/inspections.controller';
 import { NoticesController } from './modules/notices/notices.controller';
 import { ComplaintsController } from './modules/complaints/complaints.controller';
@@ -34,6 +35,7 @@ import { EventsGateway } from './gateways/events.gateway';
   controllers: [
     AuthController,
     BusinessesController,
+    SelfCheckController,
     InspectionsController,
     NoticesController,
     ComplaintsController,

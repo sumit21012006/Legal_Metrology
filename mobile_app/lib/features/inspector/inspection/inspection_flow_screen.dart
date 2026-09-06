@@ -1,31 +1,21 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
-import '../../../core/constants/app_constants.dart';
-import '../../../core/routing/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common_widgets.dart';
-import '../../../core/widgets/feature_widgets.dart';
 import '../../../di/providers.dart';
 import '../../../models/evidence.dart';
 import '../../../models/inspection.dart';
 import '../../../models/notice.dart';
 import '../../../models/ocr_result.dart';
-import '../../../models/offence_history.dart';
 import '../../../models/violation.dart';
 import '../../../models/signature.dart';
-import '../../shared/camera_capture_screen.dart';
 import 'evidence_step.dart';
 import 'ocr_step.dart';
 import 'ocr_review_step.dart';
 import 'violations_step.dart';
 import 'offence_step.dart';
 import 'observations_step.dart';
-import 'seizure_step.dart';
 import 'notice_step.dart';
 import 'signature_step.dart';
 import 'flow_complete_screen.dart';
@@ -52,11 +42,8 @@ class _InspectionFlowScreenState extends ConsumerState<InspectionFlowScreen> {
   List<EvidenceItem> _evidence = [];
   OcrResult? _ocrResult;
   List<Violation> _violations = [];
-  bool _hasConfirmedViolations = false;
-  OffenceHistory? _offenceHistory;
   Notice? _issuedNotice;
   SignatureResult? _signature;
-  bool _flowCompleted = false;
 
   static const _stepLabels = [
     'Evidence',
@@ -170,18 +157,14 @@ class _InspectionFlowScreenState extends ConsumerState<InspectionFlowScreen> {
                   ),
                   OcrReviewStep(
                     ocrResult: _ocrResult,
-                    onConfirmed: () {
-                      setState(() => _hasConfirmedViolations = false);
-                      _next();
-                    },
+                    onConfirmed: _next,
                     onBack: _back,
                   ),
                   ViolationsStep(
                     inspectionId: widget.inspectionId,
                     ocrResult: _ocrResult,
                     evidence: _evidence,
-                    onAnyConfirmed: () =>
-                        setState(() => _hasConfirmedViolations = true),
+                    onAnyConfirmed: () {},
                     onViolationsChanged: (list) =>
                         setState(() => _violations = list),
                     onContinue: _next,
@@ -202,6 +185,7 @@ class _InspectionFlowScreenState extends ConsumerState<InspectionFlowScreen> {
                     inspectionId: widget.inspectionId,
                     inspection: _inspection,
                     violations: _violations,
+                    ocrResult: _ocrResult,
                     onNoticeIssued: (notice) {
                       setState(() => _issuedNotice = notice);
                       _next();
@@ -215,13 +199,15 @@ class _InspectionFlowScreenState extends ConsumerState<InspectionFlowScreen> {
                       setState(() {
                         _signature = signature;
                         _issuedNotice = issuedNotice;
-                        _flowCompleted = true;
                       });
                       _next();
                     },
                     onBack: _back,
                   ),
-                  FlowCompleteScreen(),
+                  FlowCompleteScreen(
+                    notice: _issuedNotice,
+                    signature: _signature,
+                  ),
                 ],
               ),
             ),
