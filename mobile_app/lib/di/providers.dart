@@ -32,11 +32,11 @@ import '../services/signature_service.dart';
 /// migrate to the live backend one at a time during integration.
 /// ============================================================================
 
-const bool useMockData = bool.fromEnvironment('USE_MOCK_DATA', defaultValue: false);
+const bool useMockData = bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
 
 /// Per-repository overrides during backend integration.
-const bool useRealAuth = bool.fromEnvironment('REAL_AUTH', defaultValue: true);
-const bool useRealOcr = bool.fromEnvironment('REAL_OCR', defaultValue: true);
+const bool useRealAuth = bool.fromEnvironment('REAL_AUTH', defaultValue: false);
+const bool useRealOcr = bool.fromEnvironment('REAL_OCR', defaultValue: false);
 
 // ---------------------------------------------------------------------------
 // Core

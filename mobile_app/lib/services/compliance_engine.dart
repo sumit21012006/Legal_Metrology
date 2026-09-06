@@ -137,17 +137,47 @@ class ComplianceEngine {
       // Check for solid commodity declared in volume units (e.g. Pasta in Litres)
       final prodName = getField(OcrFieldKeys.productName)?.value.toLowerCase() ?? '';
       final generic = getField(OcrFieldKeys.genericName)?.value.toLowerCase() ?? '';
-      final isSolidFood = prodName.contains('pasta') ||
-          prodName.contains('powder') ||
-          prodName.contains('spices') ||
-          prodName.contains('atta') ||
-          prodName.contains('flour') ||
-          prodName.contains('rice') ||
-          prodName.contains('wheat') ||
-          prodName.contains('biscuits') ||
-          prodName.contains('noodles') ||
-          prodName.contains('salt') ||
-          generic.contains('pasta');
+      final combined = '$prodName $generic';
+      final solidKeywords = [
+        'pasta',
+        'powder',
+        'spices',
+        'spice',
+        'masala',
+        'atta',
+        'flour',
+        'rice',
+        'wheat',
+        'biscuit',
+        'biscuits',
+        'cookie',
+        'cookies',
+        'noodle',
+        'noodles',
+        'salt',
+        'sugar',
+        'dal',
+        'pulse',
+        'pulses',
+        'grain',
+        'grains',
+        'cereal',
+        'cereals',
+        'tea',
+        'coffee',
+        'chips',
+        'namkeen',
+        'bhujia',
+        'snack',
+        'snacks',
+        'dry fruit',
+        'dry fruits',
+        'cashew',
+        'almond',
+        'soap',
+        'detergent',
+      ];
+      final isSolidFood = solidKeywords.any((k) => combined.contains(k));
 
       final unitLower = netQty.unit?.toLowerCase() ?? '';
       final valLower = netQty.value.toLowerCase();

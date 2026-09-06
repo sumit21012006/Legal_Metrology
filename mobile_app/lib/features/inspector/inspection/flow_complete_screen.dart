@@ -70,13 +70,13 @@ class FlowCompleteScreen extends StatelessWidget {
                 label: 'Establishment',
                 value: notice?.businessName.isNotEmpty == true
                     ? notice!.businessName
-                    : 'Artisan Foods Pvt. Ltd.',
+                    : 'Establishment Name',
               ),
               KeyValueRow(
                 label: 'Product / Commodity',
                 value: notice?.productName.isNotEmpty == true
                     ? notice!.productName
-                    : 'Artisan Harvest Whole Wheat Pasta',
+                    : 'Packaged Commodity',
                 isBold: true,
               ),
               if (notice?.batchNumber != null)

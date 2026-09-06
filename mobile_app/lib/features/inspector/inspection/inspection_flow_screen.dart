@@ -157,7 +157,10 @@ class _InspectionFlowScreenState extends ConsumerState<InspectionFlowScreen> {
                   ),
                   OcrReviewStep(
                     ocrResult: _ocrResult,
-                    onConfirmed: _next,
+                    onConfirmed: (updated) {
+                      setState(() => _ocrResult = updated);
+                      _next();
+                    },
                     onBack: _back,
                   ),
                   ViolationsStep(

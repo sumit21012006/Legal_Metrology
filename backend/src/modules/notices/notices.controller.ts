@@ -70,23 +70,23 @@ export class NoticesController {
     const renderedText = this.noticeGenerator.renderNotice(type, lang, {
       NOTICE_ID: `NOT-${Date.now()}`,
       CASE_ID: body.caseId || `CASE-${Date.now()}`,
-      BUSINESS_NAME: body.businessName || 'Artisan Foods Pvt. Ltd.',
-      BUSINESS_ADDRESS: body.businessAddress || 'Survey No. 45/2, Village Kelva, Taluka Palghar, Thane District, Maharashtra - 401 401, India',
+      BUSINESS_NAME: body.businessName || 'Manufacturer / Packer',
+      BUSINESS_ADDRESS: body.businessAddress || 'Address as per inspection record',
       INSPECTOR_NAME: body.inspectorName || 'Inspector Rajesh Deshmukh',
       INSPECTOR_ID: body.inspectorId || 'INS-MH-4021',
       INSPECTION_DATE: issuedDate.toISOString().split('T')[0],
-      PRODUCT_NAME: body.productName || 'Artisan Harvest Whole Wheat Pasta',
-      MANUFACTURER_NAME: body.manufacturerName || body.businessName || 'Artisan Foods Pvt. Ltd.',
-      BATCH_NUMBER: body.batchNumber || 'AH231015B',
-      MRP: body.mrp || 'Rs. 149.00',
-      NET_QUANTITY: body.netQuantity || '1 Litre',
+      PRODUCT_NAME: body.productName || 'Packaged Commodity',
+      MANUFACTURER_NAME: body.manufacturerName || body.businessName || 'Manufacturer / Packer',
+      BATCH_NUMBER: body.batchNumber || 'N/A',
+      MRP: body.mrp || 'N/A',
+      NET_QUANTITY: body.netQuantity || 'N/A',
       OBSERVED_VIOLATION: body.observedViolation || 'Statutory Non-Compliance under Rule 6 & Section 18',
       LEGAL_SECTION: body.legalSection || 'Section 18 / Section 36(1)',
       LEGAL_RULE: body.legalRule || 'Rule 6(1)',
       PENALTY: body.penalty || 'Fine up to Rs. 25,000 under Section 36(1)',
       DEADLINE: deadlineDate.toISOString().split('T')[0],
       DATE: issuedDate.toISOString().split('T')[0],
-      PLACE: body.place || 'Thane / Palghar District, Maharashtra',
+      PLACE: body.place || 'Jurisdictional District HQ',
     });
 
     const notice = {
@@ -94,8 +94,8 @@ export class NoticesController {
       caseId: body.caseId || `CASE-${Date.now()}`,
       inspectionId: body.inspectionId || `insp_${Date.now()}`,
       businessId: body.businessId || 'biz_001',
-      businessName: body.businessName || 'Artisan Foods Pvt. Ltd.',
-      productName: body.productName || 'Artisan Harvest Whole Wheat Pasta',
+      businessName: body.businessName || 'Manufacturer / Packer',
+      productName: body.productName || 'Packaged Commodity',
       type: type,
       status: 'issued',
       issuedDate: issuedDate.toISOString(),
@@ -189,23 +189,23 @@ export class NoticesController {
       body.customDeadlineDate,
     );
 
-    const businessName = body.businessName || 'Artisan Foods Pvt. Ltd.';
-    const productName = body.productName || 'Artisan Harvest Whole Wheat Pasta';
+    const businessName = body.businessName || 'Manufacturer / Packer';
+    const productName = body.productName || 'Packaged Commodity';
     const violations = body.violations || [];
 
     const renderedText = this.noticeGenerator.renderNotice(type, lang, {
       NOTICE_ID: `NOT-${Date.now()}`,
       CASE_ID: body.caseId || `CASE-${Date.now()}`,
       BUSINESS_NAME: businessName,
-      BUSINESS_ADDRESS: body.businessAddress || 'Survey No. 45/2, Village Kelva, Taluka Palghar, Thane District, Maharashtra - 401 401, India',
+      BUSINESS_ADDRESS: body.businessAddress || 'Address as per inspection record',
       INSPECTOR_NAME: body.inspectorName || 'Inspector Rajesh Deshmukh',
       INSPECTOR_ID: body.inspectorId || 'INS-MH-4021',
       INSPECTION_DATE: issuedDate.toISOString().split('T')[0],
       PRODUCT_NAME: productName,
       MANUFACTURER_NAME: body.manufacturerName || businessName,
-      BATCH_NUMBER: body.batchNumber || 'AH231015B',
-      MRP: body.mrp || 'Rs. 149.00',
-      NET_QUANTITY: body.netQuantity || '1 Litre',
+      BATCH_NUMBER: body.batchNumber || 'N/A',
+      MRP: body.mrp || 'N/A',
+      NET_QUANTITY: body.netQuantity || 'N/A',
       OBSERVED_VIOLATION: body.observedViolation || 'Statutory Non-Compliance under Rule 6(1) & Section 18',
       LEGAL_SECTION: body.legalSection || 'Section 18 / Section 36(1)',
       LEGAL_RULE: body.legalRule || 'Rule 6(1)',

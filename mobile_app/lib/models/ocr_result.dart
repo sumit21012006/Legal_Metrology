@@ -31,6 +31,8 @@ abstract final class OcrFieldKeys {
   static const countryOfOrigin = 'COUNTRY_OF_ORIGIN';
   static const consumerCare = 'CONSUMER_CARE';
   static const batchOrLot = 'BATCH_LOT';
+  static const fssaiLicense = 'FSSAI_LICENSE';
+  static const unitSalePrice = 'UNIT_SALE_PRICE';
   static const other = 'OTHER';
 }
 
@@ -170,6 +172,8 @@ class OcrResult {
   String? get manufacturingDate => getFieldValue(OcrFieldKeys.manufacturingDate);
   String? get expiryDate => getFieldValue(OcrFieldKeys.expiryOrUseBy);
   String? get consumerCare => getFieldValue(OcrFieldKeys.consumerCare);
+  String? get fssaiNumber => getFieldValue(OcrFieldKeys.fssaiLicense);
+  String? get unitSalePrice => getFieldValue(OcrFieldKeys.unitSalePrice);
 
   OcrResult copyWith({
     String? jobId,

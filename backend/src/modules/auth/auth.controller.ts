@@ -7,24 +7,38 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'Login with username/password or mobile OTP' })
   login(@Body() body: any) {
-    const uname = (body.username || '').toLowerCase();
-    const isInspector = uname.includes('inspector') || uname.includes('rajesh') || uname.includes('deshmukh') || body.role === 'INSPECTOR';
-    const role = isInspector ? 'INSPECTOR' : 'BUSINESS';
-    const tokenType = isInspector ? 'inspector' : 'business';
+    const uname = (body.username || body.identifier || body.email || '').toLowerCase();
+    const reqRole = (body.role || '').toUpperCase();
+    const isController = uname.includes('controller') || reqRole === 'CONTROLLER';
+    const isInspector = uname.includes('inspector') || uname.includes('rajesh') || uname.includes('deshmukh') || reqRole === 'INSPECTOR';
+    const isCitizen = uname.includes('citizen') || reqRole === 'CITIZEN';
+
+    let role = 'BUSINESS';
+    let tokenType = 'business';
+    if (isController) {
+      role = 'CONTROLLER';
+      tokenType = 'controller';
+    } else if (isInspector) {
+      role = 'INSPECTOR';
+      tokenType = 'inspector';
+    } else if (isCitizen) {
+      role = 'CITIZEN';
+      tokenType = 'citizen';
+    }
     
     return {
       user: {
-        id: isInspector ? 'usr_inspector_001' : 'usr_business_001',
-        name: isInspector ? (body.username || 'Legal Metrology Officer') : (body.username || 'Business Owner'),
-        email: body.email || (isInspector ? 'officer@legalmetrology.maharashtra.gov.in' : 'owner@spices.com'),
+        id: isController ? 'usr_ctrl_01' : isInspector ? 'usr_inspector_001' : isCitizen ? 'usr_citizen_001' : 'usr_business_001',
+        name: isController ? 'Shri R.K. Singh (Controller)' : isInspector ? (body.username || 'Legal Metrology Officer') : isCitizen ? 'Citizen Complainant' : (body.username || 'Business Owner'),
+        email: body.email || (isController ? 'controller@gov.in' : isInspector ? 'officer@legalmetrology.maharashtra.gov.in' : isCitizen ? 'citizen@gov.in' : 'owner@spices.com'),
         phone: body.phone || '+91-9876543210',
         role: role,
-        designation: isInspector ? 'Legal Metrology Officer, Pune' : 'Business Proprietor',
-        badgeId: isInspector ? 'INS-MH-4021' : undefined,
-        jurisdiction: isInspector ? 'Pune Zone 1, Maharashtra' : undefined,
-        businessId: isInspector ? undefined : 'biz_001',
+        designation: isController ? 'Controller of Legal Metrology, Maharashtra' : isInspector ? 'Legal Metrology Officer, Pune' : isCitizen ? 'Verified Citizen' : 'Business Proprietor',
+        badgeId: isController ? 'MH-LM-412' : isInspector ? 'INS-MH-4021' : undefined,
+        jurisdiction: isController ? 'State of Maharashtra' : isInspector ? 'Pune Zone 1, Maharashtra' : undefined,
+        businessId: (!isController && !isInspector && !isCitizen) ? 'biz_001' : undefined,
         isInspector: isInspector,
-        isBusiness: !isInspector,
+        isBusiness: role === 'BUSINESS',
         keycloakId: `kc_${Date.now()}`,
       },
       tokens: {

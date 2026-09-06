@@ -46,27 +46,8 @@ class OcrService {
       }
     }
 
-    String fullText = combinedBuffer.toString();
-
-    // If image parsing did not yield sufficient text (e.g. mock camera in emulator or blank test photo),
-    // supply a realistic sample package text so the prototype demo never fails.
-    if (fullText.trim().length < 15) {
-      fullText = '''
-Maharashtrian Pickles & Spices SHG
-Mango Pickle (Special Recipe)
-Net Quantity: 500g
-Max Retail Price: Rs. 150.00 (inclusive of all taxes)
-Date of Mfg: 08/2026
-Best Before: 12 months from manufacture
-Country of Origin: India
-Batch No: B-2026/08
-FSSAI Lic No: 11521034000123
-Unit Sale Price: Rs 0.30 / g
-Plot 42, MIDC Industrial Area, Pune 411026
-''';
-    }
-
-    final fields = _parsePackagingDeclarations(fullText);
+    final String fullText = combinedBuffer.toString();
+    final fields = parsePackagingDeclarations(fullText);
 
     return OcrResult(
       jobId: 'ocr-${DateTime.now().millisecondsSinceEpoch}',
@@ -77,121 +58,360 @@ Plot 42, MIDC Industrial Area, Pune 411026
     );
   }
 
-  /// Parses text lines to extract statutory declarations under Rule 6.
-  List<ExtractedField> _parsePackagingDeclarations(String text) {
-    final lines = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+  /// Parses raw packaging text lines to extract statutory declarations under Rule 6.
+  /// Uses anchor keywords and layout heuristics to accurately segregate declarations
+  /// for any commodity without product-specific hardcoding.
+  static List<ExtractedField> parsePackagingDeclarations(String text) {
+    final lines = text
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
     final lowerText = text.toLowerCase();
 
     // 1. MRP (Rule 6(1)(e))
+    // Anchor keywords: MRP, M.R.P., Maximum Retail Price, ₹, Rs.
     String mrpVal = '';
     double mrpConfidence = 0.0;
+
     final mrpRegex = RegExp(
-      r'(?:m\.?r\.?p\.?|max(?:imum)?\s*retail\s*price|retail\s*price|price)\s*[:\-\.]?\s*(?:rs\.?|₹)?\s*(\d+(?:\.\d{1,2})?)',
+      r'(?:m\.?r\.?p\.?|max(?:imum)?\s*retail\s*price|retail\s*price)\s*[:\-\.]?\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d{1,2})?)',
       caseSensitive: false,
     );
     final mrpMatch = mrpRegex.firstMatch(text);
     if (mrpMatch != null) {
       mrpVal = mrpMatch.group(1) ?? '';
       mrpConfidence = 0.98;
+    } else {
+      // Multi-line scan: keyword on one line, price numeral on same or subsequent line
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (RegExp(r'\b(?:m\.?r\.?p\.?|max(?:imum)?\s*retail\s*price)\b',
+                caseSensitive: false)
+            .hasMatch(line)) {
+          final stripped = line.replaceAll(
+              RegExp(r'\b(?:m\.?r\.?p\.?|max(?:imum)?\s*retail\s*price)\b',
+                  caseSensitive: false),
+              '');
+          final numMatch = RegExp(r'(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d{1,2})?)',
+                  caseSensitive: false)
+              .firstMatch(stripped);
+          if (numMatch != null && (numMatch.group(1)?.isNotEmpty ?? false)) {
+            mrpVal = numMatch.group(1)!;
+            mrpConfidence = 0.96;
+            break;
+          }
+          if (i + 1 < lines.length) {
+            final nextNum = RegExp(
+                    r'(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d{1,2})?)',
+                    caseSensitive: false)
+                .firstMatch(lines[i + 1]);
+            if (nextNum != null && (nextNum.group(1)?.isNotEmpty ?? false)) {
+              mrpVal = nextNum.group(1)!;
+              mrpConfidence = 0.94;
+              break;
+            }
+          }
+        }
+      }
+      // Currency symbol fallback
+      if (mrpVal.isEmpty) {
+        final symbolMatch = RegExp(r'(?:₹|rs\.?\s*)(\d+(?:\.\d{1,2})?)',
+                caseSensitive: false)
+            .firstMatch(text);
+        if (symbolMatch != null) {
+          mrpVal = symbolMatch.group(1) ?? '';
+          mrpConfidence = 0.90;
+        }
+      }
     }
 
     final hasInclTaxes = lowerText.contains('incl. of all taxes') ||
         lowerText.contains('inclusive of all taxes') ||
-        lowerText.contains('incl of all taxes');
+        lowerText.contains('incl of all taxes') ||
+        lowerText.contains('incl. of taxes') ||
+        lowerText.contains('inclusive of taxes') ||
+        lowerText.contains('(incl. of all taxes)') ||
+        lowerText.contains('incl.all taxes');
 
-    // 2. Net Quantity & Unit (Rule 6(1)(c))
+    // 2. Net Quantity & Metric Unit (Rule 6(1)(c))
+    // Anchor keywords: Net Wt, Net Qty, Net Weight, Net Volume, Net Quantity
     String netQtyVal = '';
     String netQtyUnit = '';
     double netQtyConfidence = 0.0;
+
+    const unitPattern =
+        r'(?:litre|litres|ltr|lt|lit|l|ml|milli\s*litre|millilitre|millilitres|kilogram|kilograms|kg|kgs|gms|gm|grams|g|mg|units|pieces|pcs|n)\b';
+
     final netQtyRegex = RegExp(
-      r'(?:net\s*(?:weight|wt\.?|quantity|qty\.?|volume|vol\.?)|volume|quantity)\s*[:\-\.]?\s*(\d+(?:\.\d+)?)\s*(litre|litres|ltr|lit|l|ml|milli\s*litre|kilogram|kilograms|kg|gms|gm|grams|g|units|pieces|pcs|n)\b',
+      r'(?:net\s*(?:weight|wt\.?|quantity|qty\.?|volume|vol\.?|content|contents)|volume|quantity)\s*[:\-\.]?\s*(\d+(?:\.\d+)?)\s*(' +
+          unitPattern +
+          r')',
       caseSensitive: false,
     );
     final qtyMatch = netQtyRegex.firstMatch(text);
     if (qtyMatch != null) {
       netQtyVal = qtyMatch.group(1) ?? '';
-      netQtyUnit = qtyMatch.group(2) ?? '';
+      netQtyUnit = qtyMatch.group(2)?.trim() ?? '';
       netQtyConfidence = 0.98;
     } else {
-      final standaloneQty = RegExp(
-        r'\b(\d+(?:\.\d+)?)\s*(litre|litres|ltr|l|ml|kg|gms|gm|g)\b',
-        caseSensitive: false,
-      ).firstMatch(text);
-      if (standaloneQty != null) {
-        netQtyVal = standaloneQty.group(1) ?? '';
-        netQtyUnit = standaloneQty.group(2) ?? '';
-        netQtyConfidence = 0.88;
+      // Multi-line scan
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (RegExp(
+                r'\bnet\s*(?:weight|wt\.?|quantity|qty\.?|volume|vol\.?|content)\b',
+                caseSensitive: false)
+            .hasMatch(line)) {
+          final matchSame = RegExp(
+                  r'(\d+(?:\.\d+)?)\s*(' + unitPattern + r')',
+                  caseSensitive: false)
+              .firstMatch(line);
+          if (matchSame != null) {
+            netQtyVal = matchSame.group(1) ?? '';
+            netQtyUnit = matchSame.group(2)?.trim() ?? '';
+            netQtyConfidence = 0.96;
+            break;
+          }
+          if (i + 1 < lines.length) {
+            final matchNext = RegExp(
+                    r'(\d+(?:\.\d+)?)\s*(' + unitPattern + r')',
+                    caseSensitive: false)
+                .firstMatch(lines[i + 1]);
+            if (matchNext != null) {
+              netQtyVal = matchNext.group(1) ?? '';
+              netQtyUnit = matchNext.group(2)?.trim() ?? '';
+              netQtyConfidence = 0.94;
+              break;
+            }
+          }
+        }
+      }
+      if (netQtyVal.isEmpty) {
+        final standaloneQty = RegExp(
+          r'\b(\d+(?:\.\d+)?)\s*(litre|litres|ltr|l|ml|kg|kilogram|gms|gm|g)\b',
+          caseSensitive: false,
+        ).firstMatch(text);
+        if (standaloneQty != null) {
+          netQtyVal = standaloneQty.group(1) ?? '';
+          netQtyUnit = standaloneQty.group(2) ?? '';
+          netQtyConfidence = 0.88;
+        }
       }
     }
 
     // 3. Date of Manufacture / Packing (Rule 6(1)(d))
+    // Anchor keywords: Mfg Date, Pkd Date, Date of Manufacture, Pkd on, Mfg, Packed
     String mfgDateVal = '';
     double mfgConfidence = 0.0;
-    final mfgRegex = RegExp(
-      r'(?:date\s*of\s*manufacture|date\s*of\s*mfg|mfg\s*date|date\s*of\s*packing|pkd\s*date|date\s*of\s*pkd|manufactured|mfg|packed|pkd)\s*[:\-\.]?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\s+[0-9]{2,4}|[0-9]{1,2}[/\-\.][0-9]{1,2}[/\-\.][0-9]{2,4}|[0-9]{1,2}[/\-\.][0-9]{2,4}|[A-Za-z]{3,9}\s+[0-9]{2,4})',
+
+    const dateSubPattern =
+        r'([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\s+[0-9]{2,4}|[0-9]{1,2}[/\-\.][0-9]{1,2}[/\-\.][0-9]{2,4}|[0-9]{1,2}[/\-\.][0-9]{2,4}|[A-Za-z]{3,9}\s+[0-9]{2,4})';
+
+    final mfgAnchorRegex = RegExp(
+      r'\b(?:date\s*of\s*manufacture|date\s*of\s*mfg|mfg\s*date|date\s*of\s*packing|pkd\s*date|date\s*of\s*pkd|pkd\s*on|mfd\s*on|packed\s*on)\b\s*[:\-\.]?\s*' +
+          dateSubPattern,
       caseSensitive: false,
     );
-    final mfgMatch = mfgRegex.firstMatch(text);
+    final mfgMatch = mfgAnchorRegex.firstMatch(text);
     if (mfgMatch != null) {
       mfgDateVal = mfgMatch.group(1)?.trim() ?? '';
       mfgConfidence = 0.98;
-    }
-
-    // 4. Expiry / Best Before (Rule 6(1)(da))
-    String expDateVal = '';
-    double expConfidence = 0.0;
-    final expRegex = RegExp(
-      r'(?:best\s*before|expiry\s*date|exp\s*date|use\s*by|date\s*of\s*expiry|expiry|exp)\s*[:\-\.]?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\s+[0-9]{2,4}|[0-9]{1,2}[/\-\.][0-9]{1,2}[/\-\.][0-9]{2,4}|[0-9]{1,2}[/\-\.][0-9]{2,4}|[A-Za-z]{3,9}\s+[0-9]{2,4}|\d+\s*months?\s*(?:from\s*(?:mfg|date\s*of\s*manufacture))?)',
-      caseSensitive: false,
-    );
-    final expMatch = expRegex.firstMatch(text);
-    if (expMatch != null) {
-      expDateVal = expMatch.group(1)?.trim() ?? '';
-      expConfidence = 0.98;
-    }
-
-    // 5. Batch / Lot (Rule 6(1)(d))
-    String batchVal = '';
-    double batchConfidence = 0.0;
-    final batchRegex = RegExp(
-      r'(?:batch\s*(?:number|no\.?)|lot\s*(?:number|no\.?)|b\.?\s*no\.?)\s*[:\-\.]?\s*([A-Za-z0-9\-_/]+)',
-      caseSensitive: false,
-    );
-    final batchMatch = batchRegex.firstMatch(text);
-    if (batchMatch != null) {
-      final rawBatch = batchMatch.group(1)?.trim() ?? '';
-      if (rawBatch.toLowerCase() != 'number' && rawBatch.toLowerCase() != 'no') {
-        batchVal = rawBatch;
-        batchConfidence = 0.98;
+    } else {
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (RegExp(
+                    r'\b(?:date\s*of\s*manufacture|date\s*of\s*mfg|mfg\s*date|date\s*of\s*packing|pkd\s*date|date\s*of\s*pkd|pkd\s*on|mfd\s*on|mfg|pkd)\b',
+                    caseSensitive: false)
+                .hasMatch(line) &&
+            !line.toLowerCase().contains('& date of mfg')) {
+          final stripped = line.replaceAll(
+              RegExp(
+                  r'\b(?:date\s*of\s*manufacture|date\s*of\s*mfg|mfg\s*date|date\s*of\s*packing|pkd\s*date|date\s*of\s*pkd|pkd\s*on|mfd\s*on|mfg|pkd)\b[:\-\.]?',
+                  caseSensitive: false),
+              '');
+          final matchSame = RegExp(dateSubPattern, caseSensitive: false)
+              .firstMatch(stripped);
+          if (matchSame != null) {
+            mfgDateVal = matchSame.group(1)?.trim() ?? '';
+            mfgConfidence = 0.95;
+            break;
+          }
+          if (i + 1 < lines.length) {
+            final matchNext = RegExp(dateSubPattern, caseSensitive: false)
+                .firstMatch(lines[i + 1]);
+            if (matchNext != null) {
+              mfgDateVal = matchNext.group(1)?.trim() ?? '';
+              mfgConfidence = 0.93;
+              break;
+            }
+          }
+        }
       }
     }
 
-    // 6. Manufacturer / Packer Details (Rule 6(1)(a))
+    // 4. Expiry / Best Before / Use By (Rule 6(1)(da))
+    // Anchor keywords: Exp, Best Before, Use By, BB
+    String expDateVal = '';
+    double expConfidence = 0.0;
+
+    const expSubPattern =
+        r'([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\s+[0-9]{2,4}|[0-9]{1,2}[/\-\.][0-9]{1,2}[/\-\.][0-9]{2,4}|[0-9]{1,2}[/\-\.][0-9]{2,4}|[A-Za-z]{3,9}\s+[0-9]{2,4}|\d+\s*months?\s*(?:from\s*(?:mfg|date\s*of\s*manufacture|pkd|packing))?|best\s*within\s*\d+\s*(?:months?|days?))';
+
+    final expAnchorRegex = RegExp(
+      r'\b(?:best\s*before|use\s*by|expiry\s*date|exp\s*date|date\s*of\s*expiry|expiry|exp\.?|bb)\b\s*[:\-\.]?\s*' +
+          expSubPattern,
+      caseSensitive: false,
+    );
+    final expMatch = expAnchorRegex.firstMatch(text);
+    if (expMatch != null) {
+      expDateVal = expMatch.group(1)?.trim() ?? '';
+      expConfidence = 0.98;
+    } else {
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (RegExp(
+                    r'\b(?:best\s*before|use\s*by|expiry\s*date|exp\s*date|date\s*of\s*expiry|expiry|exp\.?|bb)\b',
+                    caseSensitive: false)
+                .hasMatch(line) &&
+            !RegExp(r'\b(?:mfg|manufacture|pkd|packed)\b', caseSensitive: false)
+                .hasMatch(line)) {
+          final stripped = line.replaceAll(
+              RegExp(
+                  r'\b(?:best\s*before|use\s*by|expiry\s*date|exp\s*date|date\s*of\s*expiry|expiry|exp\.?|bb)\b[:\-\.]?',
+                  caseSensitive: false),
+              '');
+          final matchSame = RegExp(expSubPattern, caseSensitive: false)
+              .firstMatch(stripped);
+          if (matchSame != null) {
+            expDateVal = matchSame.group(1)?.trim() ?? '';
+            expConfidence = 0.95;
+            break;
+          } else if (stripped.trim().isNotEmpty && stripped.trim().length < 40) {
+            expDateVal = stripped.trim();
+            expConfidence = 0.88;
+            break;
+          }
+          if (i + 1 < lines.length) {
+            final matchNext = RegExp(expSubPattern, caseSensitive: false)
+                .firstMatch(lines[i + 1]);
+            if (matchNext != null) {
+              expDateVal = matchNext.group(1)?.trim() ?? '';
+              expConfidence = 0.93;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Batch / Lot Number (Rule 6(1)(d))
+    // Anchor keywords: Batch No, Batch Number, Lot No, B. No., Batch, Lot
+    String batchVal = '';
+    double batchConfidence = 0.0;
+
+    final batchRegex = RegExp(
+      r'\b(?:batch\s*(?:number|no\.?|#)?|lot\s*(?:number|no\.?|#)?|b\.?\s*no\.?)\b\s*[:\-\.]?\s*([A-Za-z0-9\-_/]+)',
+      caseSensitive: false,
+    );
+    final batchMatches = batchRegex.allMatches(text);
+    for (final match in batchMatches) {
+      final candidate = match.group(1)?.trim() ?? '';
+      final lowerCand = candidate.toLowerCase();
+      if (lowerCand != 'number' &&
+          lowerCand != 'no' &&
+          lowerCand != 'and' &&
+          lowerCand != 'date' &&
+          lowerCand != 'mfg' &&
+          lowerCand != 'lot' &&
+          candidate.length >= 2) {
+        batchVal = candidate;
+        batchConfidence = 0.98;
+        break;
+      }
+    }
+    if (batchVal.isEmpty) {
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (RegExp(r'\b(?:batch\s*(?:number|no\.?)|lot\s*(?:number|no\.?)|b\.?\s*no\.?)\b',
+                caseSensitive: false)
+            .hasMatch(line) &&
+            !line.toLowerCase().contains('& date of mfg')) {
+          if (i + 1 < lines.length) {
+            final nextToken = lines[i + 1].trim();
+            final codeMatch =
+                RegExp(r'^([A-Za-z0-9\-_/]{3,20})$').firstMatch(nextToken);
+            if (codeMatch != null) {
+              batchVal = codeMatch.group(1)!;
+              batchConfidence = 0.94;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // 6. FSSAI License Number (Food Safety)
+    // Anchor keywords: FSSAI Lic No, FSSAI No, FSSAI Lic, Lic No, FSSAI
+    String fssaiVal = '';
+    double fssaiConfidence = 0.0;
+
+    final fssaiRegex = RegExp(
+      r'(?:fssai\s*(?:lic(?:ense)?\s*no\.?|no\.?|lic\.?)?|lic\.?\s*no\.?)\s*[:\-\.]?\s*([0-9]{10,14})',
+      caseSensitive: false,
+    );
+    final fssaiMatch = fssaiRegex.firstMatch(text);
+    if (fssaiMatch != null) {
+      fssaiVal = fssaiMatch.group(1) ?? '';
+      fssaiConfidence = 0.98;
+    } else {
+      final fssaiStandalone = RegExp(r'\b([12]\d{13})\b').firstMatch(text);
+      if (fssaiStandalone != null) {
+        fssaiVal = fssaiStandalone.group(1) ?? '';
+        fssaiConfidence = 0.92;
+      }
+    }
+
+    // 7. Manufacturer / Packer Details (Rule 6(1)(a))
+    // Anchor keywords: Mfd by, Marketed by, Packed by, Manufactured by, Imported by
     String mfgNameVal = '';
     double mfgNameConfidence = 0.0;
+
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
       final mfgHeaderMatch = RegExp(
-        r'(?:manufactured\s*&\s*packed\s*by|manufactured\s*by|packed\s*by|mfd\s*by|mfg\s*&\s*pkd\s*by|marketed\s*by|imported\s*by)\s*[:\-\.]?\s*(.*)',
+        r'\b(?:manufactured\s*&\s*packed\s*by|manufactured\s*by|packed\s*by|mfd\s*by|mfg\s*&\s*pkd\s*by|marketed\s*by|imported\s*by|mfd\.\s*by|pkd\.\s*by|mfg\.\s*by)\b\s*[:\-\.]?\s*(.*)',
         caseSensitive: false,
       ).firstMatch(line);
 
       if (mfgHeaderMatch != null) {
         final sameLineText = mfgHeaderMatch.group(1)?.trim() ?? '';
         final buffer = StringBuffer();
+        int startNext = i + 1;
+
         if (sameLineText.isNotEmpty) {
           buffer.write(sameLineText);
+        } else if (i + 1 < lines.length) {
+          buffer.write(lines[i + 1].trim());
+          startNext = i + 2;
         }
-        // Grab subsequent address lines until hit next major section or 4 lines max
-        for (int j = i + 1; j < lines.length && j <= i + 5; j++) {
-          final nextLine = lines[j];
+
+        // Grab subsequent address lines until hit next major section
+        for (int j = startNext; j < lines.length && j <= startNext + 4; j++) {
+          final nextLine = lines[j].trim();
           final lower = nextLine.toLowerCase();
           if (lower.contains('fssai') ||
               lower.contains('for consumer') ||
+              lower.contains('customer care') ||
+              lower.contains('consumer complaints') ||
               lower.contains('mrp') ||
-              lower.contains('net') ||
+              lower.contains('net wt') ||
+              lower.contains('net volume') ||
+              lower.contains('net qty') ||
+              lower.contains('net quantity') ||
               lower.contains('batch') ||
-              lower.contains('barcode')) {
+              lower.contains('barcode') ||
+              RegExp(r'^\d{8,}$')
+                  .hasMatch(nextLine.replaceAll(RegExp(r'\s+'), ''))) {
             break;
           }
           if (buffer.isNotEmpty) buffer.write(', ');
@@ -205,11 +425,16 @@ Plot 42, MIDC Industrial Area, Pune 411026
 
     if (mfgNameVal.isEmpty) {
       for (final line in lines) {
-        if (line.toLowerCase().contains('pvt') ||
-            line.toLowerCase().contains('ltd') ||
-            line.toLowerCase().contains('shg') ||
-            line.toLowerCase().contains('industries') ||
-            line.toLowerCase().contains('foods')) {
+        final lower = line.toLowerCase();
+        if (lower == 'manufacturer details') continue;
+        if (lower.contains('pvt ltd') ||
+            lower.contains('pvt. ltd') ||
+            lower.contains('private limited') ||
+            lower.contains('ltd.') ||
+            lower.contains('industries') ||
+            lower.contains('foods') ||
+            lower.contains('enterprises') ||
+            lower.contains('shg')) {
           mfgNameVal = line;
           mfgNameConfidence = 0.85;
           break;
@@ -217,49 +442,112 @@ Plot 42, MIDC Industrial Area, Pune 411026
       }
     }
 
-    // 7. Country of Origin (Rule 6(1)(aa))
+    // 8. Country of Origin (Rule 6(1)(aa))
+    // Anchor keywords: Country of Origin, Made in, Product of
     String countryVal = '';
     double countryConfidence = 0.0;
+
     final countryRegex = RegExp(
-      r'(?:country\s*of\s*origin|made\s*in|product\s*of)\s*[:\-\.]?\s*([a-zA-Z]+)',
+      r'(?:country\s*of\s*origin|made\s*in|product\s*of)\s*[:\-\.]?\s*([a-zA-Z ]{3,25})',
       caseSensitive: false,
     );
     final countryMatch = countryRegex.firstMatch(text);
     if (countryMatch != null) {
-      countryVal = countryMatch.group(1)?.trim() ?? 'India';
-      countryConfidence = 0.98;
-    } else if (lowerText.contains('india') || lowerText.contains('made in india')) {
-      countryVal = 'India';
-      countryConfidence = 0.95;
+      final c = countryMatch.group(1)?.trim().split('\n').first.trim() ?? '';
+      if (c.isNotEmpty &&
+          c.toLowerCase() != 'origin' &&
+          c.toLowerCase() != 'in') {
+        countryVal = c;
+        countryConfidence = 0.98;
+      }
+    }
+    if (countryVal.isEmpty) {
+      if (lowerText.contains('made in india') ||
+          lowerText.contains('product of india')) {
+        countryVal = 'India';
+        countryConfidence = 0.95;
+      } else if (lowerText.contains(', india') || lowerText.contains('india.')) {
+        countryVal = 'India';
+        countryConfidence = 0.90;
+      }
     }
 
-    // 8. Consumer Care Helpline / Email (Rule 6(2))
+    // 9. Consumer Care Helpline / Complaints / Email (Rule 6(2))
+    // Anchor keywords: Customer Care, Consumer Complaints, For complaints, Consumer Feedback, Email, Helpline
     String careVal = '';
     double careConfidence = 0.0;
-    final carePhoneRegex = RegExp(
-      r'(?:(?:toll\s*free|care|helpline|tel|call|phone)\s*[:\-\.]?\s*)?(\+?91[\s-]?)?(?:1800|\d{2,4})[\s-]?\d{3,4}[\s-]?\d{3,4}',
-      caseSensitive: false,
-    );
-    final careEmailRegex = RegExp(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+');
-    final phoneMatch = carePhoneRegex.firstMatch(text);
-    final emailMatch = careEmailRegex.firstMatch(text);
 
-    if (phoneMatch != null && emailMatch != null) {
-      careVal = '${phoneMatch.group(0)?.trim()}, ${emailMatch.group(0)}';
-      careConfidence = 0.96;
-    } else if (emailMatch != null) {
-      careVal = emailMatch.group(0) ?? '';
-      careConfidence = 0.92;
-    } else if (phoneMatch != null) {
-      careVal = phoneMatch.group(0)?.trim() ?? '';
-      careConfidence = 0.90;
+    String? foundPhone;
+    String? foundEmail;
+
+    final careEmailRegex =
+        RegExp(r'\b[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\b');
+    final emailMatch = careEmailRegex.firstMatch(text);
+    if (emailMatch != null) {
+      foundEmail = emailMatch.group(0);
     }
 
-    // 9. Unit Sale Price (Rule 6(11))
+    // Explicit toll-free 1800 number anywhere
+    final tollFreeMatch =
+        RegExp(r'\b1800[\s\-]?(?:\d{2,4}[\s\-]?){1,3}\d{3,4}\b')
+            .firstMatch(text);
+    if (tollFreeMatch != null) {
+      foundPhone = tollFreeMatch.group(0)?.trim();
+    }
+
+    // Look at lines with consumer care anchor keywords
+    if (foundPhone == null) {
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (RegExp(
+                r'\b(?:customer\s*care|consumer\s*complaints|for\s*complaints|consumer\s*feedback|helpline|toll\s*free|contact\s*us|feedback)\b',
+                caseSensitive: false)
+            .hasMatch(line)) {
+          final phoneOnLine = RegExp(
+                  r'(?:(?:\+?91[\s\-]?)?(?:0\d{2,4}[\s\-]?)?\d{6,10}|\b\d{3,5}[\s\-]\d{6,8}\b)')
+              .firstMatch(line);
+          if (phoneOnLine != null) {
+            final candidate = phoneOnLine.group(0)?.trim() ?? '';
+            if (candidate.replaceAll(RegExp(r'\D'), '').length >= 8) {
+              foundPhone = candidate;
+              break;
+            }
+          }
+          if (i + 1 < lines.length) {
+            final nextLine = lines[i + 1];
+            final nextPhone = RegExp(
+                    r'(?:(?:\+?91[\s\-]?)?(?:0\d{2,4}[\s\-]?)?\d{6,10}|\b\d{3,5}[\s\-]\d{6,8}\b)')
+                .firstMatch(nextLine);
+            if (nextPhone != null) {
+              final candidate = nextPhone.group(0)?.trim() ?? '';
+              if (candidate.replaceAll(RegExp(r'\D'), '').length >= 8) {
+                foundPhone = candidate;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (foundPhone != null && foundEmail != null) {
+      careVal = '$foundPhone, $foundEmail';
+      careConfidence = 0.96;
+    } else if (foundEmail != null) {
+      careVal = foundEmail;
+      careConfidence = 0.94;
+    } else if (foundPhone != null) {
+      careVal = foundPhone;
+      careConfidence = 0.92;
+    }
+
+    // 10. Unit Sale Price (Rule 6(11))
+    // Anchor keywords: Unit Sale Price, USP
     String uspVal = '';
     double uspConfidence = 0.0;
+
     final uspRegex = RegExp(
-      r'(?:unit\s*sale\s*price|usp)\s*[:\-\.]?\s*([^\n\r]+)',
+      r'(?:unit\s*sale\s*price|usp)\s*[:\-\.]?\s*([^\n\r,]+)',
       caseSensitive: false,
     );
     final uspMatch = uspRegex.firstMatch(text);
@@ -268,40 +556,62 @@ Plot 42, MIDC Industrial Area, Pune 411026
       uspConfidence = 0.92;
     }
 
-    // 10. Product Name & Generic Name (Rule 6(1)(b))
+    // 11. Product Name & Generic Name (Rule 6(1)(b))
     String prodNameVal = '';
     for (final line in lines) {
       final clean = line.trim();
       final lower = clean.toLowerCase();
+
       // Skip numeric lines, barcodes, FSSAI lic numbers
       if (RegExp(r'^\d+$').hasMatch(clean)) continue;
-      if (RegExp(r'^\d{8,}$').hasMatch(clean.replaceAll(RegExp(r'\s+'), ''))) continue;
+      if (RegExp(r'^\d[\d\s\-]{6,}\d$').hasMatch(clean)) continue;
+      if (fssaiVal.isNotEmpty && clean.contains(fssaiVal)) continue;
 
       // Skip common metadata headers
       if (lower.contains('batch no') ||
+          lower.contains('batch number') ||
           lower.contains('date of mfg') ||
+          lower.contains('mfg date') ||
+          lower.contains('date of manufacture') ||
           lower.contains('manufacturer details') ||
           lower.contains('manufactured & packed') ||
+          lower.contains('manufactured by') ||
+          lower.contains('packed by') ||
+          lower.contains('marketed by') ||
+          lower.contains('imported by') ||
           lower.contains('fssai') ||
+          lower.contains('lic no') ||
           lower.contains('consumer feedback') ||
+          lower.contains('customer care') ||
+          lower.contains('consumer complaints') ||
           lower.contains('net volume') ||
           lower.contains('net quantity') ||
+          lower.contains('net weight') ||
           lower.contains('net wt') ||
+          lower.contains('net qty') ||
           lower.contains('mrp') ||
+          lower.contains('max retail price') ||
           lower.contains('best before') ||
-          lower.contains('expiry')) {
+          lower.contains('expiry') ||
+          lower.contains('unit sale price') ||
+          lower.contains('country of origin') ||
+          lower.contains('made in') ||
+          lower.contains('survey no') ||
+          lower.contains('highway') ||
+          lower.contains('plot') ||
+          lower.contains('industrial area') ||
+          lower.contains('taluka') ||
+          lower.contains('district')) {
         continue;
       }
 
-      // Title lines are usually between 6 and 60 characters with alphabetical characters
-      if (clean.length >= 6 && clean.length <= 60 && RegExp(r'[A-Za-z]').hasMatch(clean)) {
+      // Title lines: between 3 and 80 characters with letters
+      if (clean.length >= 3 &&
+          clean.length <= 80 &&
+          RegExp(r'[A-Za-z]').hasMatch(clean)) {
         prodNameVal = clean;
         break;
       }
-    }
-
-    if (prodNameVal.isEmpty) {
-      prodNameVal = 'Artisan Harvest Whole Wheat Pasta';
     }
 
     // Generic name extraction: extract commodity descriptor
@@ -310,20 +620,44 @@ Plot 42, MIDC Industrial Area, Pune 411026
       'Whole Wheat Pasta',
       'Pasta',
       'Mango Pickle',
+      'Mixed Pickle',
       'Pickle',
       'Chilli Powder',
+      'Turmeric Powder',
+      'Coriander Powder',
+      'Garam Masala',
+      'Spices',
       'Refined Sunflower Oil',
+      'Mustard Oil',
       'Edible Oil',
       'Wheat Flour',
+      'Chakki Atta',
       'Atta',
       'Basmati Rice',
       'Rice',
       'Biscuits',
+      'Cookies',
       'Tea',
       'Coffee',
       'Noodles',
       'Honey',
-      'Spices',
+      'Detergent Powder',
+      'Washing Powder',
+      'Dishwash Bar',
+      'Shampoo',
+      'Soap',
+      'Toothpaste',
+      'Namkeen',
+      'Bhujia',
+      'Chips',
+      'Ghee',
+      'Butter',
+      'Paneer',
+      'Milk',
+      'Salt',
+      'Sugar',
+      'Pulses',
+      'Dal',
     ];
     for (final keyword in commodityKeywords) {
       if (prodNameVal.toLowerCase().contains(keyword.toLowerCase())) {
@@ -337,14 +671,14 @@ Plot 42, MIDC Industrial Area, Pune 411026
         key: OcrFieldKeys.productName,
         label: 'Product Name',
         value: prodNameVal,
-        confidence: 0.96,
+        confidence: prodNameVal.isNotEmpty ? 0.96 : 0.0,
         isMissing: prodNameVal.isEmpty,
       ),
       ExtractedField(
         key: OcrFieldKeys.genericName,
         label: 'Generic Name (Rule 6(1)(b))',
         value: genericName,
-        confidence: 0.95,
+        confidence: genericName.isNotEmpty ? 0.95 : 0.0,
         isMissing: genericName.isEmpty,
       ),
       ExtractedField(
@@ -403,7 +737,14 @@ Plot 42, MIDC Industrial Area, Pune 411026
         isMissing: careVal.isEmpty,
       ),
       ExtractedField(
-        key: 'UNIT_SALE_PRICE',
+        key: OcrFieldKeys.fssaiLicense,
+        label: 'FSSAI License No (Food Safety)',
+        value: fssaiVal,
+        confidence: fssaiConfidence,
+        isMissing: fssaiVal.isEmpty,
+      ),
+      ExtractedField(
+        key: OcrFieldKeys.unitSalePrice,
         label: 'Unit Sale Price (Rule 6(11))',
         value: uspVal,
         confidence: uspConfidence,

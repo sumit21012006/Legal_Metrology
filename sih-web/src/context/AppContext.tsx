@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole, AuthUser } from '@/types';
 import { authDb } from '@/lib/db';
+import { loginToBackend, registerToBackend } from '@/lib/api/auth';
+import { clearAuthToken } from '@/lib/apiClient';
 
 export type CitizenTab = 'FILE_COMPLAINT' | 'MY_COMPLAINTS';
 export type ControllerTab = 'COMMAND_DASHBOARD' | 'COMPOUNDING_QUEUE' | 'SUPPLY_CHAIN' | 'JURISDICTION' | 'PANCHANAMA';
@@ -24,7 +26,7 @@ interface AppContextType {
   setRole: (role: UserRole) => void;
   toggleRole: () => void;
   isLoggedIn: boolean;
-  loginUser: (identifier: string, pass: string, role: UserRole, rememberMe?: boolean) => void;
+  loginUser: (identifier: string, pass: string, role: UserRole, rememberMe?: boolean) => Promise<void>;
   registerUser: (
     data: {
       name: string;
@@ -36,7 +38,7 @@ interface AppContextType {
       upiVpa?: string;
     },
     rememberMe?: boolean
-  ) => void;
+  ) => Promise<void>;
   logout: () => void;
   citizenTab: CitizenTab;
   setCitizenTab: (tab: CitizenTab) => void;
@@ -145,8 +147,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setNotificationCount(unread);
   }, [notifications]);
 
-  const loginUser = (identifier: string, pass: string, targetRole: UserRole, rememberMe: boolean = true) => {
-    const loggedInUser = authDb.login(identifier, pass, targetRole);
+  const loginUser = async (identifier: string, pass: string, targetRole: UserRole, rememberMe: boolean = true): Promise<void> => {
+    let loggedInUser: AuthUser;
+    try {
+      // Try NestJS backend first
+      loggedInUser = await loginToBackend(identifier, pass, targetRole);
+      console.info('[auth] Logged in via NestJS backend');
+    } catch (backendErr) {
+      console.warn('[auth] Backend login failed, falling back to local authDb:', backendErr);
+      // Fall back to local users.json / localStorage
+      loggedInUser = authDb.login(identifier, pass, targetRole);
+    }
     setUser(loggedInUser);
     setRole(loggedInUser.role);
     setIsLoggedIn(true);
@@ -161,7 +172,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const registerUser = (
+  const registerUser = async (
     data: {
       name: string;
       email: string;
@@ -172,8 +183,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       upiVpa?: string;
     },
     rememberMe: boolean = true
-  ) => {
-    const createdUser = authDb.register(data);
+  ): Promise<void> => {
+    let createdUser: AuthUser;
+    try {
+      // Try NestJS backend first
+      createdUser = await registerToBackend(data);
+      // Also register locally so next local-fallback login works
+      try { authDb.register(data); } catch { /* already exists locally */ }
+      console.info('[auth] Registered via NestJS backend');
+    } catch (backendErr) {
+      console.warn('[auth] Backend register failed, falling back to local authDb:', backendErr);
+      createdUser = authDb.register(data);
+    }
     setUser(createdUser);
     setRole(createdUser.role);
     setIsLoggedIn(true);
@@ -191,6 +212,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     setIsLoggedIn(false);
+    clearAuthToken();
     if (typeof window !== 'undefined') {
       localStorage.removeItem('sih_saved_user_session');
     }

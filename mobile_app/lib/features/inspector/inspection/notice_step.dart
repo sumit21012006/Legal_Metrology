@@ -74,7 +74,7 @@ class _NoticeStepState extends ConsumerState<NoticeStep> {
     if (ocr?.genericName?.isNotEmpty == true) {
       return ocr!.genericName!;
     }
-    return 'Artisan Harvest Whole Wheat Pasta';
+    return widget.inspection?.business.name ?? 'Packaged Commodity';
   }
 
   String get _businessName {
@@ -82,11 +82,10 @@ class _NoticeStepState extends ConsumerState<NoticeStep> {
     if (ocr?.manufacturerDetails?.isNotEmpty == true) {
       return ocr!.manufacturerDetails!.split(',').first.trim();
     }
-    if (widget.inspection?.business.name.trim().isNotEmpty == true &&
-        !widget.inspection!.business.name.contains('Pickle')) {
+    if (widget.inspection?.business.name.trim().isNotEmpty == true) {
       return widget.inspection!.business.name.trim();
     }
-    return 'Artisan Foods Pvt. Ltd.';
+    return 'Manufacturer / Packer';
   }
 
   String get _businessAddress {
@@ -98,17 +97,17 @@ class _NoticeStepState extends ConsumerState<NoticeStep> {
       }
     }
     return widget.inspection?.business.location.singleLine ??
-        'Survey No. 45/2, Village Kelva, Taluka Palghar, Thane District, Maharashtra - 401 401, India';
+        'Address as per Inspection Record';
   }
 
   String get _batchNumber =>
-      widget.ocrResult?.batchNumber ?? 'AH231015B';
+      widget.ocrResult?.batchNumber ?? 'N/A';
 
   String get _mrp =>
-      widget.ocrResult?.mrp ?? 'Rs. 149.00 (Incl. of all taxes)';
+      widget.ocrResult?.mrp ?? 'Not declared';
 
   String get _netQuantity =>
-      widget.ocrResult?.netQuantity ?? '1 Litre';
+      widget.ocrResult?.netQuantity ?? 'Not declared';
 
   Future<void> _generate() async {
     if (_selectedTypes.isEmpty) {
