@@ -91,9 +91,23 @@ services:
     volumes:
       - redis_data:/data
 
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: legal-metrology-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"   # AMQP Protocol
+      - "15672:15672" # Web Management Console
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rmq_data:/var/lib/rabbitmq
+
 volumes:
   postgres_data:
   neo4j_data:
   minio_data:
   es_data:
   redis_data:
+  rmq_data:

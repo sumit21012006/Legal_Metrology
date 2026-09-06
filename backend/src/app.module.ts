@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module';
 import { PrismaModule } from './database/prisma.module';
 import { ElasticsearchModule } from './search/elasticsearch.module';
+import { RabbitMQModule } from './queue/rabbitmq.module';
 import { AuthController } from './modules/auth/auth.controller';
 import { BusinessesController } from './modules/businesses/businesses.controller';
 import { SelfCheckController } from './modules/businesses/self-check.controller';
@@ -31,6 +32,7 @@ import { EventsGateway } from './gateways/events.gateway';
     KnowledgeBaseModule,
     PrismaModule,
     ElasticsearchModule,
+    RabbitMQModule,
   ],
   controllers: [
     AuthController,
