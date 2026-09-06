@@ -107,6 +107,26 @@ export class BusinessesController {
     return newBiz;
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Get business details by ID' })
+  getBusinessById(@Query('id') idParam?: string) {
+    return this.mockBusinesses[0];
+  }
+
+  @Get(':id/inspections')
+  @ApiOperation({ summary: 'Get business inspections by business ID' })
+  getBusinessInspections() {
+    return [
+      {
+        id: 'insp_001',
+        businessId: 'biz_001',
+        businessName: 'Maharashtrian Pickles & Spices SHG',
+        status: 'NOTICE_ISSUED',
+        visitDate: new Date().toISOString(),
+      },
+    ];
+  }
+
   @Post('self-check')
   @ApiOperation({ summary: 'Private Business Packaging Self-Check (Confidential)' })
   privateSelfCheck(@Body() body: any) {
