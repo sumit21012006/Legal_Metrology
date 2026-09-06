@@ -10,12 +10,13 @@ export class AuthController {
     const uname = (body.username || '').toLowerCase();
     const isInspector = uname.includes('inspector') || uname.includes('rajesh') || uname.includes('deshmukh') || body.role === 'INSPECTOR';
     const role = isInspector ? 'INSPECTOR' : 'BUSINESS';
+    const tokenType = isInspector ? 'inspector' : 'business';
     
     return {
       user: {
-        id: `usr_${Date.now()}`,
-        name: isInspector ? 'Inspector Rajesh Deshmukh' : (body.username || 'Anita Sharma'),
-        email: body.email || (isInspector ? 'rajesh.deshmukh@gov.in' : 'anita@abctraders.in'),
+        id: isInspector ? 'usr_inspector_001' : 'usr_business_001',
+        name: isInspector ? (body.username || 'Legal Metrology Officer') : (body.username || 'Business Owner'),
+        email: body.email || (isInspector ? 'officer@legalmetrology.maharashtra.gov.in' : 'owner@spices.com'),
         phone: body.phone || '+91-9876543210',
         role: role,
         designation: isInspector ? 'Legal Metrology Officer, Pune' : 'Business Proprietor',
@@ -27,12 +28,12 @@ export class AuthController {
         keycloakId: `kc_${Date.now()}`,
       },
       tokens: {
-        accessToken: `mock_jwt_access_token_${Date.now()}`,
-        refreshToken: `mock_jwt_refresh_token_${Date.now()}`,
+        accessToken: `mock_jwt_access_token_${tokenType}_${Date.now()}`,
+        refreshToken: `mock_jwt_refresh_token_${tokenType}_${Date.now()}`,
         expiresIn: 3600,
       },
-      accessToken: `mock_jwt_access_token_${Date.now()}`,
-      refreshToken: `mock_jwt_refresh_token_${Date.now()}`,
+      accessToken: `mock_jwt_access_token_${tokenType}_${Date.now()}`,
+      refreshToken: `mock_jwt_refresh_token_${tokenType}_${Date.now()}`,
     };
   }
 
@@ -74,8 +75,19 @@ export class AuthController {
   @Get('me')
   @ApiOperation({ summary: 'Get current authenticated user profile' })
   me(@Headers('authorization') authHeader: string) {
+    const isBusiness = authHeader?.toLowerCase().includes('business');
+    if (isBusiness) {
+      return {
+        id: 'usr_business_001',
+        name: 'Maharashtrian Pickles & Spices Owner',
+        email: 'owner@spices.com',
+        role: 'BUSINESS',
+        isInspector: false,
+        isBusiness: true,
+      };
+    }
     return {
-      id: 'usr_current',
+      id: 'usr_inspector_001',
       name: 'Legal Metrology Officer',
       email: 'officer@legalmetrology.maharashtra.gov.in',
       role: 'INSPECTOR',

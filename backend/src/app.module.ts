@@ -9,6 +9,8 @@ import { ComplaintsController } from './modules/complaints/complaints.controller
 import { ControllerDashboardController } from './modules/controller/controller.controller';
 import { PaymentsController } from './modules/payments/payments.controller';
 import { CasesController } from './modules/cases/cases.controller';
+import { SelfChecksController } from './modules/self-checks/self-checks.controller';
+import { SystemHealthController } from './modules/health/system-health.controller';
 import { OcrController } from './modules/ocr/ocr.controller';
 import { ViolationsController } from './modules/violations/violations.controller';
 import { OffenceCalculatorService } from './modules/offences/offence-calculator.service';
@@ -34,6 +36,8 @@ import { EventsGateway } from './gateways/events.gateway';
     ControllerDashboardController,
     PaymentsController,
     CasesController,
+    SelfChecksController,
+    SystemHealthController,
     OcrController,
     ViolationsController,
   ],
