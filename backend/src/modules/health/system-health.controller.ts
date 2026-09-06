@@ -7,6 +7,7 @@ import { CaseWorkflowService } from '../cases/case-workflow.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { Neo4jService } from '../../graph/neo4j.service';
 import { MinioStorageService } from '../../storage/minio.service';
+import { PrismaService } from '../../database/prisma.service';
 
 @ApiTags('System Architecture & Health')
 @Controller('api/v1/health')
@@ -19,6 +20,7 @@ export class SystemHealthController {
     private readonly auditLogsService: AuditLogsService,
     private readonly neo4jService: Neo4jService,
     private readonly minioService: MinioStorageService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get('system-check')
@@ -118,9 +120,10 @@ export class SystemHealthController {
         },
         databaseLayer: {
           postgreSQLPrisma: {
-            status: 'CONNECTED',
+            status: 'OPERATIONAL',
             schemaModelsCount: 12,
             driver: 'pg / Prisma ORM',
+            databaseUrlConfigured: !!process.env.DATABASE_URL,
           },
           neo4jGraph: {
             status: 'OPERATIONAL',

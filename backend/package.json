@@ -18,7 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed:legal-kb": "ts-node src/database/seeders/seed-legal-kb.ts"
+    "seed:legal-kb": "ts-node src/database/seeders/seed-legal-kb.ts",
+    "seed:db": "ts-node src/database/seeders/seed-database.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
@@ -40,9 +41,13 @@
     "neo4j-driver": "^5.17.0",
     "minio": "^7.1.3",
     "socket.io": "^4.7.4",
-    "axios": "^1.6.7"
+    "axios": "^1.6.7",
+    "@prisma/client": "^5.10.0",
+    "bcrypt": "^5.1.1"
   },
   "devDependencies": {
+    "prisma": "^5.10.0",
+    "@types/bcrypt": "^5.0.2",
     "@nestjs/cli": "^10.3.0",
     "@nestjs/schematics": "^10.1.0",
     "@nestjs/testing": "^10.3.0",
