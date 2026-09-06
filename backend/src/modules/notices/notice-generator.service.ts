@@ -33,6 +33,18 @@ export interface NoticePlaceholderData {
 @Injectable()
 export class NoticeGeneratorService {
   private readonly noticePath = path.resolve(__dirname, '../../../../knowledge_base/legal_knowledge_base/notices');
+  private readonly officialTemplatesPath = path.resolve(__dirname, '../../../../Notices_Template');
+
+  getOfficialTemplatePath(type: 'improvement' | 'seizure' | 'panchanama' | 'compounding'): string {
+    const templateMap: Record<string, string> = {
+      improvement: 'Improvement_Notice_Template.docx',
+      seizure: 'Seizure_Bill_English_Template.docx',
+      panchanama: 'Panchanama_Template.docx',
+      compounding: 'Compounding_Order_Template.docx',
+    };
+    const fileName = templateMap[type] || 'Improvement_Notice_Template.docx';
+    return path.join(this.officialTemplatesPath, fileName);
+  }
 
   renderNotice(type: 'improvement' | 'seizure' | 'panchanama' | 'compounding', lang: 'en' | 'mr', data: NoticePlaceholderData): string {
     const filename = `notice_${type}_${lang}.md`;
@@ -43,7 +55,7 @@ export class NoticeGeneratorService {
     if (fs.existsSync(filePath)) {
       template = fs.readFileSync(filePath, 'utf8');
     } else {
-      template = `# NOTICE OF ${type.toUpperCase()}\n\nNotice Serial: {{NOTICE_ID}}\nCase ID: {{CASE_ID}}\nIssued To: {{BUSINESS_NAME}}, {{BUSINESS_ADDRESS}}\nViolation: {{OBSERVED_VIOLATION}}\nUnder Section: {{LEGAL_SECTION}}\nDeadline: {{DEADLINE}}\nIssued By: {{INSPECTOR_NAME}} (ID: {{INSPECTOR_ID}})`;
+      template = `# OFFICIAL NOTICE OF ${type.toUpperCase()}\n\nNotice Serial: {{NOTICE_ID}}\nCase ID: {{CASE_ID}}\nIssued To: {{BUSINESS_NAME}}, {{BUSINESS_ADDRESS}}\nViolation: {{OBSERVED_VIOLATION}}\nUnder Section: {{LEGAL_SECTION}}\nDeadline: {{DEADLINE}}\nIssued By: {{INSPECTOR_NAME}} (ID: {{INSPECTOR_ID}})`;
     }
 
     // Replace 24 placeholders dynamically
