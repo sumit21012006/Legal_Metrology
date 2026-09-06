@@ -53,17 +53,19 @@ class _InspectorDashboardScreenState
           .listCases(onlyActive: true);
       if (!mounted) return;
       setState(() {
-        _assigned =
-            inspections.where((i) => i.status.isActive).take(6).toList();
-        _draftNotices =
-            notices.where((n) => n.status.isEditableByInspector).toList();
+        _assigned = inspections.where((i) => i.status.isActive).take(6).toList();
+        if (_assigned.isEmpty && inspections.isNotEmpty) {
+          _assigned = inspections.take(6).toList();
+        }
+        _draftNotices = notices.take(6).toList();
         _activeCases = cases.length;
         _loading = false;
       });
     } catch (e) {
+      debugPrint('[DASH] Load error: $e');
       if (!mounted) return;
       setState(() {
-        _error = 'Could not load your dashboard. Please check your connection and retry.';
+        _error = 'Could not load your dashboard ($e). Please check your connection and retry.';
         _loading = false;
       });
     }

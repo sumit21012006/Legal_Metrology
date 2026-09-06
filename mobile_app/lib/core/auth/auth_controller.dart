@@ -68,14 +68,18 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> login(String username, String password) async {
-    state = state.copyWith(status: AuthStatus.initial);
-    final result = await _authRepository.login(username: username, password: password);
-    await _tokenStorage.saveTokens(
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-    );
-    await _tokenStorage.saveUserId(result.user.id);
-    state = AuthState(status: AuthStatus.authenticated, user: result.user, isRestoring: false);
+    try {
+      final result = await _authRepository.login(username: username, password: password);
+      await _tokenStorage.saveTokens(
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      );
+      await _tokenStorage.saveUserId(result.user.id);
+      state = AuthState(status: AuthStatus.authenticated, user: result.user, isRestoring: false);
+    } catch (_) {
+      state = const AuthState(status: AuthStatus.unauthenticated, isRestoring: false);
+      rethrow;
+    }
   }
 
   Future<void> registerBusinessAccount({

@@ -52,7 +52,7 @@ final mockBackendProvider = Provider<MockBackend>((ref) => MockBackend.instance)
 // ---------------------------------------------------------------------------
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  if (useMockData || !useRealAuth) {
+  if (useMockData && !useRealAuth) {
     return MockAuthRepository(ref.watch(mockBackendProvider));
   }
   return RealAuthRepository(ref.watch(apiClientProvider));
@@ -74,7 +74,7 @@ final evidenceRepositoryProvider = Provider<EvidenceRepository>((ref) {
 });
 
 final ocrRepositoryProvider = Provider<OcrRepository>((ref) {
-  if (useMockData || !useRealOcr) {
+  if (useMockData && !useRealOcr) {
     return MockOcrRepository(ref.watch(mockBackendProvider));
   }
   return RealOcrRepository(ref.watch(apiClientProvider));

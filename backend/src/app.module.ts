@@ -8,6 +8,9 @@ import { NoticesController } from './modules/notices/notices.controller';
 import { ComplaintsController } from './modules/complaints/complaints.controller';
 import { ControllerDashboardController } from './modules/controller/controller.controller';
 import { PaymentsController } from './modules/payments/payments.controller';
+import { CasesController } from './modules/cases/cases.controller';
+import { OcrController } from './modules/ocr/ocr.controller';
+import { ViolationsController } from './modules/violations/violations.controller';
 import { OffenceCalculatorService } from './modules/offences/offence-calculator.service';
 import { NoticeGeneratorService } from './modules/notices/notice-generator.service';
 import { CaseWorkflowService } from './modules/cases/case-workflow.service';
@@ -30,6 +33,9 @@ import { EventsGateway } from './gateways/events.gateway';
     ComplaintsController,
     ControllerDashboardController,
     PaymentsController,
+    CasesController,
+    OcrController,
+    ViolationsController,
   ],
   providers: [
     OffenceCalculatorService,

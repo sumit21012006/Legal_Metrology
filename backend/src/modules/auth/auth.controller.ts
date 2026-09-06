@@ -7,16 +7,21 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'Login with username/password or mobile OTP' })
   login(@Body() body: any) {
-    const isInspector = body.username?.includes('inspector') || body.role === 'INSPECTOR';
+    const uname = (body.username || '').toLowerCase();
+    const isInspector = uname.includes('inspector') || uname.includes('rajesh') || uname.includes('deshmukh') || body.role === 'INSPECTOR';
     const role = isInspector ? 'INSPECTOR' : 'BUSINESS';
     
     return {
       user: {
         id: `usr_${Date.now()}`,
-        name: body.username || 'Demo User',
-        email: body.email || 'user@example.gov.in',
+        name: isInspector ? 'Inspector Rajesh Deshmukh' : (body.username || 'Anita Sharma'),
+        email: body.email || (isInspector ? 'rajesh.deshmukh@gov.in' : 'anita@abctraders.in'),
         phone: body.phone || '+91-9876543210',
         role: role,
+        designation: isInspector ? 'Legal Metrology Officer, Pune' : 'Business Proprietor',
+        badgeId: isInspector ? 'INS-MH-4021' : undefined,
+        jurisdiction: isInspector ? 'Pune Zone 1, Maharashtra' : undefined,
+        businessId: isInspector ? undefined : 'biz_001',
         isInspector: isInspector,
         isBusiness: !isInspector,
         keycloakId: `kc_${Date.now()}`,
